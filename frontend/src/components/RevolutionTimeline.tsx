@@ -1,14 +1,14 @@
 // Revolution Timeline - Calendar view of 3/day revolutions
 import React from 'react';
 import { useRevolutions, useRevolutionStats } from '../hooks/useRevolutions';
-import { cn, formatDate, formatRelativeTime } from '../utils/format';
-import { Calendar, Clock, CheckCircle, XCircle, AlertTriangle, ChevronLeft, ChevronRight, Today } from 'lucide-react';
+import { cn, formatDate } from '../utils/format';
+import { Calendar, Clock, CheckCircle, XCircle, AlertTriangle, ChevronDown } from 'lucide-react';
 
 export function RevolutionTimeline() {
   const [selectedMission, setSelectedMission] = React.useState<string>('all');
   const [viewMode, setViewMode] = React.useState<'timeline' | 'calendar'>('timeline');
 
-  const { revolutions, loading, refetch } = useRevolutions({ mission_id: selectedMission === 'all' ? undefined : selectedMission, limit: 50 });
+  const { revolutions, loading } = useRevolutions({ mission_id: selectedMission === 'all' ? undefined : selectedMission, limit: 50 });
   const { stats } = useRevolutionStats();
 
   // Get unique missions
@@ -104,15 +104,15 @@ function TimelineView({ revolutions, loading }: { revolutions: any[]; loading: b
   return (
     <div className="bg-space-900/50 rounded-xl border border-white/10 overflow-hidden">
       <div className="divide-y divide-white/5">
-        {revolutions.map((rev, index) => (
-          <RevolutionTimelineRow key={rev.id} rev={rev} index={index} />
+        {revolutions.map((rev) => (
+          <RevolutionTimelineRow key={rev.id} rev={rev} />
         ))}
       </div>
     </div>
   );
 }
 
-function RevolutionTimelineRow({ rev, index }: { rev: any; index: number }) {
+function RevolutionTimelineRow({ rev }: { rev: any }) {
   const isActive = rev.status === 'active';
   const isCompleted = rev.status === 'completed';
   const progress = rev.total_segments_planned > 0
@@ -249,7 +249,7 @@ function CalendarView({ revolutionsByDate, loading }: { revolutionsByDate: Recor
       </div>
 
       <div className="grid grid-cols-7 gap-1">
-        {dates.map((dateStr, idx) => {
+        {dates.map((dateStr) => {
           const revs = revolutionsByDate[dateStr];
           const isToday = dateStr === today;
           const activeRev = revs.find(r => r.status === 'active');
@@ -268,7 +268,7 @@ function CalendarView({ revolutionsByDate, loading }: { revolutionsByDate: Recor
                 {new Date(dateStr).getDate()}
               </div>
 
-              {revs.map((rev, i) => (
+              {revs.map((rev) => (
                 <div
                   key={rev.id}
                   className={cn(

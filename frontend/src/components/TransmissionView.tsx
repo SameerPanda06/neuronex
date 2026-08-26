@@ -2,14 +2,12 @@
 import React from 'react';
 import { useImages } from '../hooks/useImages';
 import { useQueue } from '../hooks/useQueue';
-import { useTelemetry } from '../hooks/useTelemetry';
 import { cn, formatBytes, formatBps, formatProgress, getStatusColor, getClassificationColor, getClassificationIcon } from '../utils/format';
-import { Satellite, Send, CheckCircle, AlertCircle, Loader2, Signal, Database } from 'lucide-react';
+import { Satellite, Send, Signal, Database } from 'lucide-react';
 
 export function TransmissionView() {
   const { images, loading } = useImages({ status: 'transmitting', limit: 10 });
   const { queue } = useQueue();
-  const { data: signalData } = useTelemetry.latestTelemetry(); // This doesn't exist, fix
 
   const transmittingImages = images.filter(img => img.status === 'transmitting');
   const queuedImages = queue;

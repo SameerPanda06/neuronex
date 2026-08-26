@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { queueApi } from '../services/api';
 import { socketService } from '../services/socket';
-import type { Image, QueueResponse, ReorderRequest, ImageStatus } from '../types';
+import type { Image, ReorderRequest } from '../types';
 
 export function useQueue() {
   const [queue, setQueue] = useState<Image[]>([]);

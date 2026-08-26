@@ -4,9 +4,9 @@ import type {
   Image, ImagesResponse, ImageProgress, ImagesStats,
   TelemetryResponse, TelemetryHistory, SignalQuality,
   QueueResponse, ReorderRequest, NextImageResponse,
-  RetransmissionsResponse, RetransmissionAckRequest, RetransmissionAckResponse,
+  RetransmissionsResponse, RetransmissionAckRequest, RetransmissionAckResponse, RetransmissionStats,
   RevolutionsResponse, RevolutionStats, ScheduleRevolutionRequest,
-  RevolutionStatusResponse
+  RevolutionStatusResponse, Revolution
 } from '../types';
 
 const api = axios.create({

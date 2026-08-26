@@ -6,7 +6,7 @@ import { useRevolutionStatus } from '../hooks/useRevolutions';
 import { cn } from '../utils/format';
 import {
   LayoutDashboard, Satellite, Signal, AlertTriangle,
-  ChevronDown, ChevronUp, Wifi, Database, Settings
+  ChevronLeft, ChevronRight, Wifi, Database, Settings
 } from 'lucide-react';
 
 interface LayoutProps {

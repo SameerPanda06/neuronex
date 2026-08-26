@@ -10,7 +10,7 @@ import { Signal, Activity, TrendingUp, TrendingDown, Maximize2 } from 'lucide-re
 
 export function MetricsPanel() {
   const [timeRange, setTimeRange] = useState<'1h' | '6h' | '24h' | '7d'>('1h');
-  const { data, loading, error } = useSignalQuality(undefined, timeRange === '1h' ? 1 : timeRange === '6h' ? 6 : timeRange === '24h' ? 24 : 168);
+  const { data } = useSignalQuality(undefined, timeRange === '1h' ? 1 : timeRange === '6h' ? 6 : timeRange === '24h' ? 24 : 168);
 
   const hours = timeRange === '1h' ? 1 : timeRange === '6h' ? 6 : timeRange === '24h' ? 24 : 168;
 

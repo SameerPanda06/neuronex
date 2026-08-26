@@ -2,7 +2,6 @@
 import React from 'react';
 import { useState } from 'react';
 import { retransmitApi } from '../services/api';
-import { socketService } from '../services/socket';
 import { useRetransmissions } from '../hooks/useRetransmissions';
 import { cn, formatDate } from '../utils/format';
 import { AlertTriangle, CheckCircle, XCircle, RotateCcw, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';

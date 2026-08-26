@@ -1,17 +1,17 @@
 // ML Gallery - Filterable classification grid
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useImages } from '../hooks/useImages';
 import { useImagesStats } from '../hooks/useImages';
-import { cn, formatBytes, formatDate, getClassificationColor, getClassificationIcon, getActionColor } from '../utils/format';
+import { cn, formatDate, getClassificationColor, getClassificationIcon, getActionColor } from '../utils/format';
 import { Filter, Search, Eye, Download, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 
-export function MLGallery() {
+export function MLGallery({ onImageClick }: { onImageClick?: (id: string) => void }) {
   const [classificationFilter, setClassificationFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'priority' | 'created_at' | 'confidence'>('priority');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
-  const { images, total, loading, refetch } = useImages({
+  const { images, total, loading } = useImages({
     classification: classificationFilter === 'all' ? undefined : classificationFilter,
     sort: sortBy,
     order: sortOrder,
@@ -116,7 +116,7 @@ export function MLGallery() {
         ) : (
           <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filteredImages.map((image) => (
-              <ImageCard key={image.id} image={image} />
+              <ImageCard key={image.id} image={image} onImageClick={onImageClick} />
             ))}
           </div>
         )}
@@ -146,7 +146,7 @@ function StatCard({ label, value, color, icon }: { label: string; value: number;
   );
 }
 
-function ImageCard({ image }: { image: any }) {
+function ImageCard({ image, onImageClick }: { image: any; onImageClick?: (id: string) => void }) {
   return (
     <div className="bg-white/5 rounded-lg border border-white/10 overflow-hidden hover:border-neuronex-500/30 transition-all group">
       {/* Image Preview Placeholder */}
@@ -201,7 +201,7 @@ function ImageCard({ image }: { image: any }) {
 
         {/* Action Buttons */}
         <div className="flex gap-2 pt-2 border-t border-white/10">
-          <button className="flex-1 py-1.5 px-2 text-xs font-medium text-neuronex-300 hover:text-white transition-colors flex items-center justify-center gap-1">
+          <button onClick={() => onImageClick?.(image.id)} className="flex-1 py-1.5 px-2 text-xs font-medium text-neuronex-300 hover:text-white transition-colors flex items-center justify-center gap-1">
             <Eye className="w-3.5 h-3.5" />
             View
           </button>

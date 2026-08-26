@@ -1,5 +1,4 @@
-// Main App Component
-import React, { useState } from 'react';
+import React, { useState, createContext, useContext } from 'react';
 import { Layout } from './components/Layout';
 import { TransmissionView } from './components/TransmissionView';
 import { MLGallery } from './components/MLGallery';
@@ -79,16 +78,17 @@ function App() {
   );
 }
 
-// Simple Tabs implementation
+// Simple Tabs implementation using React Context
+const TabsContext = createContext<{ value: string; onValueChange: (v: string) => void }>({ value: '', onValueChange: () => {} });
+
 function Tabs({ children, defaultValue }: { children: React.ReactNode; defaultValue: string }) {
   const [value, setValue] = useState(defaultValue);
   return (
-    <div>
-      {React.Children.map(children, child => {
-        if (!React.isValidElement(child)) return child;
-        return React.cloneElement(child as React.ReactElement<any>, { value, onValueChange: setValue });
-      })}
-    </div>
+    <TabsContext.Provider value={{ value, onValueChange: setValue }}>
+      <div>
+        {children}
+      </div>
+    </TabsContext.Provider>
   );
 }
 
@@ -96,8 +96,9 @@ function TabsList({ children, className }: { children: React.ReactNode; classNam
   return <div className={className} role="tablist">{children}</div>;
 }
 
-function TabsTrigger({ value, children, className, onValueChange }: { value: string; children: React.ReactNode; className?: string; onValueChange: (v: string) => void }) {
-  const isActive = false; // Will be set by parent
+function TabsTrigger({ value, children, className }: { value: string; children: React.ReactNode; className?: string }) {
+  const { value: activeValue, onValueChange } = useContext(TabsContext);
+  const isActive = activeValue === value;
   return (
     <button
       role="tab"
@@ -115,7 +116,8 @@ function TabsTrigger({ value, children, className, onValueChange }: { value: str
 }
 
 function TabsContent({ value, children, className }: { value: string; children: React.ReactNode; className?: string }) {
-  // In a real implementation, this would be controlled by parent Tabs
+  const { value: activeValue } = useContext(TabsContext);
+  if (activeValue !== value) return null;
   return <div className={className} role="tabpanel">{children}</div>;
 }
 

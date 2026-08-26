@@ -1,12 +1,6 @@
 // Socket.IO Client Service
 import { io, Socket } from 'socket.io-client';
 import type {
-  TelemetryUpdateEvent,
-  ImageClassifiedEvent,
-  ImageProgressEvent,
-  RetransmitRequestedEvent,
-  RevolutionStartEvent,
-  RevolutionEndEvent,
   RetransmitAckEvent,
   QueueReorderEvent,
   ImageDiscardEvent,
@@ -46,14 +40,14 @@ class SocketService {
         this.connected = true;
         this.reconnectAttempts = 0;
         console.log('[Socket] Connected:', this.socket?.id);
-        this.emit('connected', { connected: true });
+        this.dispatch('connected', { connected: true });
         resolve();
       });
 
       this.socket.on('disconnect', (reason) => {
         this.connected = false;
         console.log('[Socket] Disconnected:', reason);
-        this.emit('disconnected', { reason });
+        this.dispatch('disconnected', { reason });
       });
 
       this.socket.on('connect_error', (error) => {
@@ -131,12 +125,12 @@ class SocketService {
 
     events.forEach((event) => {
       this.socket?.on(event, (data: any) => {
-        this.emit(event, data);
+        this.dispatch(event, data);
       });
     });
   }
 
-  private emit<T>(event: string, data: T): void {
+  private dispatch<T>(event: string, data: T): void {
     this.listeners.get(event)?.forEach((callback) => {
       try {
         callback(data);

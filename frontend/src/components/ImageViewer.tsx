@@ -16,7 +16,7 @@ export function ImageViewer({ imageId, onClose }: ImageViewerProps) {
 
   if (!imageId) return null;
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'Escape') onClose();
     if (e.key === 'ArrowLeft') setZoom(Math.max(0.5, zoom - 0.25));
     if (e.key === 'ArrowRight') setZoom(Math.min(3, zoom + 0.25));
@@ -49,7 +49,7 @@ export function ImageViewer({ imageId, onClose }: ImageViewerProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/95 flex flex-col" onKeyDown={handleKeyDown}>
+    <div className="fixed inset-0 z-50 bg-black/95 flex flex-col" onKeyDown={(e) => handleKeyDown(e.nativeEvent)}>
       {/* Header */}
       <header className="p-4 flex items-center justify-between border-b border-white/10">
         <div className="flex items-center gap-4">
@@ -147,7 +147,7 @@ export function ImageViewer({ imageId, onClose }: ImageViewerProps) {
               <MetadataField label="Progress" value={`${(image.progress_percent || 0).toFixed(1)}%`} />
               <MetadataField label="Chunk Size" value={image.chunk_size ? `${image.chunk_size} B` : '—'} />
               <MetadataField label="RSSI" value={image.rssi !== null ? `${image.rssi} dBm` : '—'} />
-              MetadataField label="SNR" value={image.snr !== null ? `${image.snr.toFixed(1)} dB` : '—'} />
+              <MetadataField label="SNR" value={image.snr !== null ? `${image.snr.toFixed(1)} dB` : '—'} />
 
               <MetadataField label="Confidence" value={image.confidence ? `${(image.confidence * 100).toFixed(1)}%` : '—'} />
               <MetadataField label="ML Latency" value={image.latency_ms ? `${image.latency_ms.toFixed(0)} ms` : '—'} />
