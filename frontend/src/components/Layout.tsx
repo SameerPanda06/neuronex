@@ -1,6 +1,5 @@
-// Main Layout Component
-import React, { useState, useEffect } from 'react';
-import { socketService } from '../services/socket';
+import { useState } from 'react';
+import { useConnection } from '../hooks/useConnection';
 import { useImagesStats } from '../hooks/useImages';
 import { useRevolutionStatus } from '../hooks/useRevolutions';
 import { cn } from '../utils/format';
@@ -15,17 +14,9 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [connected, setConnected] = useState(false);
+  const { connected, statusText } = useConnection();
   const { stats } = useImagesStats();
   const { status } = useRevolutionStatus();
-
-  // Socket connection status
-  useEffect(() => {
-    const unsubConnect = socketService.on('connected', () => setConnected(true));
-    const unsubDisconnect = socketService.on('disconnected', () => setConnected(false));
-    socketService.connect();
-    return () => { unsubConnect(); unsubDisconnect(); };
-  }, []);
 
   const navItems = [
     { id: 'transmission', label: 'Transmission', icon: Satellite, href: '#transmission' },
@@ -64,8 +55,8 @@ export function Layout({ children }: LayoutProps) {
             <div className="flex items-center gap-2">
               <div className={cn('w-2 h-2 rounded-full', connected ? 'bg-signal-excellent' : 'bg-signal-critical')} />
               {sidebarOpen && (
-                <span className="text-xs font-medium">
-                  {connected ? 'Connected' : 'Disconnected'}
+                <span className="text-xs font-medium uppercase tracking-wider">
+                  {statusText}
                 </span>
               )}
             </div>

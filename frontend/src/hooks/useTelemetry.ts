@@ -1,7 +1,6 @@
 // Telemetry Hooks
 import { useState, useEffect, useCallback } from 'react';
-import { telemetryApi } from '../services/api';
-import { socketService } from '../services/socket';
+import { dataSource } from '../data';
 import type { Telemetry, TelemetryHistory, SignalQuality, TelemetryUpdateEvent } from '../types';
 
 export function useLatestTelemetry() {
@@ -11,10 +10,10 @@ export function useLatestTelemetry() {
 
   const fetch = useCallback(async () => {
     try {
-      const res = await telemetryApi.latest();
-      setData(res.data);
+      const res = await dataSource.telemetry.getLatest();
+      setData(res);
       setError(null);
-    } catch (e) {
+    } catch {
       setError('Failed to fetch telemetry');
     } finally {
       setLoading(false);
@@ -27,9 +26,9 @@ export function useLatestTelemetry() {
     return () => clearInterval(interval);
   }, [fetch]);
 
-  // Real-time updates via WebSocket
+  // Real-time updates via DataSource
   useEffect(() => {
-    const unsubscribe = socketService.on<TelemetryUpdateEvent>('telemetry:update', (update) => {
+    const unsubscribe = dataSource.telemetry.subscribeTelemetry((update: TelemetryUpdateEvent) => {
       setData((prev) => {
         if (!prev) return prev;
         return {
@@ -46,10 +45,8 @@ export function useLatestTelemetry() {
       });
     });
 
-    socketService.joinTelemetry();
     return () => {
       unsubscribe();
-      socketService.leaveTelemetry();
     };
   }, []);
 
@@ -63,10 +60,10 @@ export function useTelemetryHistory(imageId?: string, hours = 24) {
 
   const fetch = useCallback(async () => {
     try {
-      const res = await telemetryApi.history({ image_id: imageId, hours });
-      setData(res.data);
+      const res = await dataSource.telemetry.getHistory({ image_id: imageId, hours });
+      setData(res);
       setError(null);
-    } catch (e) {
+    } catch {
       setError('Failed to fetch telemetry history');
     } finally {
       setLoading(false);
@@ -89,10 +86,10 @@ export function useSignalQuality(imageId?: string, hours = 24) {
 
   const fetch = useCallback(async () => {
     try {
-      const res = await telemetryApi.signal({ image_id: imageId, hours });
-      setData(res.data);
+      const res = await dataSource.telemetry.getSignal({ image_id: imageId, hours });
+      setData(res);
       setError(null);
-    } catch (e) {
+    } catch {
       setError('Failed to fetch signal quality');
     } finally {
       setLoading(false);

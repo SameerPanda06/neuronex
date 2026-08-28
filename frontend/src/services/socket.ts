@@ -6,6 +6,8 @@ import type {
   ImageDiscardEvent,
 } from '../types';
 
+import { SOCKET_URL } from '../config/runtime';
+
 type EventCallback<T> = (data: T) => void;
 
 class SocketService {
@@ -24,7 +26,7 @@ class SocketService {
         return;
       }
 
-      const wsUrl = url || import.meta.env.VITE_WS_URL || 'ws://localhost:5000';
+      const wsUrl = url || SOCKET_URL;
 
       this.socket = io(wsUrl, {
         transports: ['websocket', 'polling'],

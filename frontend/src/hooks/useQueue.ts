@@ -1,7 +1,6 @@
 // Queue Hooks
 import { useState, useEffect, useCallback } from 'react';
-import { queueApi } from '../services/api';
-import { socketService } from '../services/socket';
+import { dataSource } from '../data';
 import type { Image, ReorderRequest } from '../types';
 
 export function useQueue() {
@@ -11,10 +10,10 @@ export function useQueue() {
 
   const fetch = useCallback(async () => {
     try {
-      const res = await queueApi.get();
-      setQueue(res.data.queue);
+      const res = await dataSource.queue.get();
+      setQueue(res.queue);
       setError(null);
-    } catch (e) {
+    } catch {
       setError('Failed to fetch queue');
     } finally {
       setLoading(false);
@@ -27,14 +26,13 @@ export function useQueue() {
     return () => clearInterval(interval);
   }, [fetch]);
 
-  // Real-time queue updates
+  // Real-time queue updates via DataSource
   useEffect(() => {
-    const unsubscribe = socketService.on('queue:update', (data: { queue: Image[] }) => {
+    const unsubscribe = dataSource.queue.subscribeQueue((data: { queue: Image[] }) => {
       setQueue(data.queue);
     });
 
-    const unsubscribeReordered = socketService.on('queue:reordered', (data: { queue: ReorderRequest[] }) => {
-      // Update local queue order
+    const unsubscribeReordered = dataSource.queue.subscribeReordered((data: { queue: ReorderRequest[] }) => {
       setQueue((prev) => {
         const orderMap = new Map(data.queue.map((item, index) => [item.id, index]));
         return [...prev].sort((a, b) => {
@@ -53,8 +51,8 @@ export function useQueue() {
 
   const reorder = useCallback(async (items: ReorderRequest[]) => {
     try {
-      await queueApi.reorder(items);
-    } catch (e) {
+      await dataSource.queue.reorder(items);
+    } catch {
       setError('Failed to reorder queue');
     }
   }, []);
@@ -68,9 +66,9 @@ export function useNextImage() {
 
   const fetch = useCallback(async () => {
     try {
-      const res = await queueApi.next();
-      setData(res.data);
-    } catch (e) {
+      const res = await dataSource.queue.next();
+      setData(res);
+    } catch {
       setData({ next: null, message: 'Error fetching next image' });
     } finally {
       setLoading(false);

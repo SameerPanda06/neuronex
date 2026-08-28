@@ -14,18 +14,19 @@ export function ImageViewer({ imageId, onClose }: ImageViewerProps) {
   const [zoom, setZoom] = useState(1);
   const [showMetadata, setShowMetadata] = useState(true);
 
-  if (!imageId) return null;
-
-  const handleKeyDown = (e: KeyboardEvent) => {
-    if (e.key === 'Escape') onClose();
-    if (e.key === 'ArrowLeft') setZoom(Math.max(0.5, zoom - 0.25));
-    if (e.key === 'ArrowRight') setZoom(Math.min(3, zoom + 0.25));
-  };
-
   React.useEffect(() => {
+    if (!imageId) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+      if (e.key === 'ArrowLeft') setZoom((prev) => Math.max(0.5, prev - 0.25));
+      if (e.key === 'ArrowRight') setZoom((prev) => Math.min(3, prev + 0.25));
+    };
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [zoom]);
+  }, [imageId, onClose]);
+
+  if (!imageId) return null;
 
   if (loading) {
     return (
@@ -49,7 +50,7 @@ export function ImageViewer({ imageId, onClose }: ImageViewerProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/95 flex flex-col" onKeyDown={(e) => handleKeyDown(e.nativeEvent)}>
+    <div className="fixed inset-0 z-50 bg-black/95 flex flex-col">
       {/* Header */}
       <header className="p-4 flex items-center justify-between border-b border-white/10">
         <div className="flex items-center gap-4">

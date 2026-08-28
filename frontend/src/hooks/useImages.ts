@@ -1,8 +1,7 @@
 // Images Hooks
 import { useState, useEffect, useCallback } from 'react';
-import { imagesApi } from '../services/api';
-import { socketService } from '../services/socket';
-import type { Image, ImagesResponse, ImagesStats, ImageProgress, ImageClassifiedEvent, ImageProgressEvent, ImageStatus } from '../types';
+import { dataSource } from '../data';
+import type { Image, ImagesResponse, ImagesStats, ImageProgress, ImageStatus } from '../types';
 
 export function useImages(params?: {
   status?: string;
@@ -17,17 +16,27 @@ export function useImages(params?: {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const { status, classification, mission_id, limit, offset, sort, order } = params || {};
+
   const fetch = useCallback(async () => {
     try {
-      const res = await imagesApi.list(params);
-      setData(res.data);
+      const res = await dataSource.images.list({
+        status,
+        classification,
+        mission_id,
+        limit,
+        offset,
+        sort,
+        order,
+      });
+      setData(res);
       setError(null);
     } catch (e) {
       setError('Failed to fetch images');
     } finally {
       setLoading(false);
     }
-  }, [params?.status, params?.classification, params?.mission_id, params?.limit, params?.offset, params?.sort, params?.order]);
+  }, [status, classification, mission_id, limit, offset, sort, order]);
 
   useEffect(() => {
     fetch();
@@ -35,7 +44,7 @@ export function useImages(params?: {
 
   // Real-time updates
   useEffect(() => {
-    const unsubscribeClassified = socketService.on<ImageClassifiedEvent>('image:classified', (event) => {
+    const unsubscribeClassified = dataSource.images.subscribeClassified( (event) => {
       setData((prev) => {
         if (!prev) return prev;
         const exists = prev.images.find((img) => img.id === event.id);
@@ -84,7 +93,7 @@ export function useImages(params?: {
       });
     });
 
-    const unsubscribeProgress = socketService.on<ImageProgressEvent>('image:progress', (event) => {
+    const unsubscribeProgress = dataSource.images.subscribeProgress( (event) => {
       setData((prev) => {
         if (!prev) return prev;
         return {
@@ -98,7 +107,7 @@ export function useImages(params?: {
       });
     });
 
-    const unsubscribeStatus = socketService.on('image:status', (event: { image_id: string; status: ImageStatus }) => {
+    const unsubscribeStatus = dataSource.images.subscribeStatus( (event: { image_id: string; status: ImageStatus }) => {
       setData((prev) => {
         if (!prev) return prev;
         return {
@@ -128,8 +137,8 @@ export function useImage(id: string | null) {
   const fetch = useCallback(async () => {
     if (!id) return;
     try {
-      const res = await imagesApi.get(id);
-      setData(res.data);
+      const res = await dataSource.images.get(id);
+      setData(res);
       setError(null);
     } catch (e) {
       setError('Failed to fetch image');
@@ -153,8 +162,8 @@ export function useImageProgress(imageId: string | null) {
   const fetch = useCallback(async () => {
     if (!imageId) return;
     try {
-      const res = await imagesApi.progress(imageId);
-      setData(res.data);
+      const res = await dataSource.images.progress(imageId);
+      setData(res);
       setError(null);
     } catch (e) {
       setError('Failed to fetch progress');
@@ -171,7 +180,7 @@ export function useImageProgress(imageId: string | null) {
 
   // Real-time progress updates
   useEffect(() => {
-    const unsubscribe = socketService.on<ImageProgressEvent>('image:progress', (event) => {
+    const unsubscribe = dataSource.images.subscribeProgress( (event) => {
       if (event.id === imageId) {
         setData({
           image_id: event.id,
@@ -201,8 +210,8 @@ export function useImagesStats() {
 
   const fetch = useCallback(async () => {
     try {
-      const res = await imagesApi.stats();
-      setData(res.data);
+      const res = await dataSource.images.stats();
+      setData(res);
       setError(null);
     } catch (e) {
       setError('Failed to fetch stats');
@@ -219,4 +228,4 @@ export function useImagesStats() {
 
   return { stats: data, loading, error, refetch: fetch };
 }
-
+

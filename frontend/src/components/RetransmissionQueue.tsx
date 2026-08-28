@@ -1,14 +1,11 @@
-// Retransmission Queue - Visual retransmission requests
-import React from 'react';
 import { useState } from 'react';
-import { retransmitApi } from '../services/api';
 import { useRetransmissions } from '../hooks/useRetransmissions';
 import { cn, formatDate } from '../utils/format';
 import { AlertTriangle, CheckCircle, XCircle, RotateCcw, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
 
 export function RetransmissionQueue() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'acknowledged' | 'completed'>('all');
-  const { retransmissions, loading, refetch } = useRetransmissions({
+  const { retransmissions, loading, refetch, acknowledge, complete } = useRetransmissions({
     status: statusFilter === 'all' ? undefined : statusFilter,
   });
 
@@ -71,7 +68,12 @@ export function RetransmissionQueue() {
         ) : (
           <div className="divide-y divide-white/5">
             {retransmissions.map((retrans) => (
-              <RetransmissionRow key={retrans.id} retrans={retrans} />
+              <RetransmissionRow
+                key={retrans.id}
+                retrans={retrans}
+                onAcknowledge={() => acknowledge(retrans.id)}
+                onComplete={() => complete(retrans.id)}
+              />
             ))}
           </div>
         )}
@@ -80,7 +82,15 @@ export function RetransmissionQueue() {
   );
 }
 
-function RetransmissionRow({ retrans }: { retrans: any }) {
+function RetransmissionRow({
+  retrans,
+  onAcknowledge,
+  onComplete,
+}: {
+  retrans: any;
+  onAcknowledge: () => void;
+  onComplete: () => void;
+}) {
   const [expanded, setExpanded] = useState(false);
 
   const statusConfig = {
@@ -128,7 +138,7 @@ function RetransmissionRow({ retrans }: { retrans: any }) {
           {retrans.status === 'pending' && (
             <button
               className="px-3 py-1.5 bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 rounded-lg text-xs font-medium hover:bg-yellow-500/30 transition-colors flex items-center gap-1"
-              onClick={() => acknowledgeRetransmission(retrans.id)}
+              onClick={onAcknowledge}
             >
               <RotateCcw className="w-3.5 h-3.5" />
               Acknowledge
@@ -138,7 +148,7 @@ function RetransmissionRow({ retrans }: { retrans: any }) {
           {retrans.status === 'acknowledged' && (
             <button
               className="px-3 py-1.5 bg-green-500/20 text-green-400 border border-green-500/30 rounded-lg text-xs font-medium hover:bg-green-500/30 transition-colors flex items-center gap-1"
-              onClick={() => completeRetransmission(retrans.id)}
+              onClick={onComplete}
             >
               <CheckCircle className="w-3.5 h-3.5" />
               Complete
@@ -214,12 +224,4 @@ function getStatusBg(color: string): string {
     red: 'bg-red-500/20 text-red-400 border border-red-500/30',
   };
   return map[color as keyof typeof map] || map.yellow;
-}
-
-function acknowledgeRetransmission(id: number) {
-  retransmitApi.ack({ retransmit_id: id });
-}
-
-function completeRetransmission(id: number) {
-  retransmitApi.complete(id);
 }

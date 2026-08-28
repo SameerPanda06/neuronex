@@ -1,4 +1,5 @@
-import React, { useState, createContext, useContext } from 'react';
+import { useState, useEffect, createContext, useContext } from 'react';
+import type { ReactNode } from 'react';
 import { Layout } from './components/Layout';
 import { TransmissionView } from './components/TransmissionView';
 import { MLGallery } from './components/MLGallery';
@@ -6,15 +7,15 @@ import { MetricsPanel } from './components/MetricsPanel';
 import { RetransmissionQueue } from './components/RetransmissionQueue';
 import { ImageViewer } from './components/ImageViewer';
 import { RevolutionTimeline } from './components/RevolutionTimeline';
-import { socketService } from './services/socket';
+import { dataSource } from './data';
 
 function App() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
-  // Initialize socket connection
-  React.useEffect(() => {
-    socketService.connect().catch(console.error);
-    return () => socketService.disconnect();
+  // Initialize data source lifecycle
+  useEffect(() => {
+    dataSource.connect().catch(console.error);
+    return () => dataSource.disconnect();
   }, []);
 
   return (
@@ -81,7 +82,7 @@ function App() {
 // Simple Tabs implementation using React Context
 const TabsContext = createContext<{ value: string; onValueChange: (v: string) => void }>({ value: '', onValueChange: () => {} });
 
-function Tabs({ children, defaultValue }: { children: React.ReactNode; defaultValue: string }) {
+function Tabs({ children, defaultValue }: { children: ReactNode; defaultValue: string }) {
   const [value, setValue] = useState(defaultValue);
   return (
     <TabsContext.Provider value={{ value, onValueChange: setValue }}>
@@ -92,11 +93,11 @@ function Tabs({ children, defaultValue }: { children: React.ReactNode; defaultVa
   );
 }
 
-function TabsList({ children, className }: { children: React.ReactNode; className?: string }) {
+function TabsList({ children, className }: { children: ReactNode; className?: string }) {
   return <div className={className} role="tablist">{children}</div>;
 }
 
-function TabsTrigger({ value, children, className }: { value: string; children: React.ReactNode; className?: string }) {
+function TabsTrigger({ value, children, className }: { value: string; children: ReactNode; className?: string }) {
   const { value: activeValue, onValueChange } = useContext(TabsContext);
   const isActive = activeValue === value;
   return (
@@ -115,7 +116,7 @@ function TabsTrigger({ value, children, className }: { value: string; children: 
   );
 }
 
-function TabsContent({ value, children, className }: { value: string; children: React.ReactNode; className?: string }) {
+function TabsContent({ value, children, className }: { value: string; children: ReactNode; className?: string }) {
   const { value: activeValue } = useContext(TabsContext);
   if (activeValue !== value) return null;
   return <div className={className} role="tabpanel">{children}</div>;
