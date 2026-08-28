@@ -1,172 +1,188 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useConnection } from '../hooks/useConnection';
-import { useImagesStats } from '../hooks/useImages';
-import { useRevolutionStatus } from '../hooks/useRevolutions';
 import { cn } from '../utils/format';
 import {
-  LayoutDashboard, Satellite, Signal, AlertTriangle,
-  ChevronLeft, ChevronRight, Wifi, Database, Settings
+  LayoutDashboard,
+  Radio,
+  Images,
+  BarChart3,
+  RotateCcw,
+  Globe,
+  Settings,
+  Cpu,
+  ChevronLeft,
+  ChevronRight,
+  Satellite,
 } from 'lucide-react';
+
+export type NavTabId =
+  | 'mission-control'
+  | 'transmission'
+  | 'ml-gallery'
+  | 'metrics'
+  | 'retransmit'
+  | 'revolutions'
+  | 'settings'
+  | 'diagnostics';
 
 interface LayoutProps {
   children: React.ReactNode;
+  activeTab: NavTabId;
+  onTabChange: (tab: NavTabId) => void;
 }
 
-export function Layout({ children }: LayoutProps) {
+export function Layout({ children, activeTab, onTabChange }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const { connected, statusText } = useConnection();
-  const { stats } = useImagesStats();
-  const { status } = useRevolutionStatus();
+  const { connected, mode, statusText } = useConnection();
+  const isMock = mode === 'mock';
 
-  const navItems = [
-    { id: 'transmission', label: 'Transmission', icon: Satellite, href: '#transmission' },
-    { id: 'ml-gallery', label: 'ML Gallery', icon: Database, href: '#ml-gallery' },
-    { id: 'metrics', label: 'Signal Metrics', icon: Signal, href: '#metrics' },
-    { id: 'queue', label: 'Queue', icon: LayoutDashboard, href: '#queue' },
-    { id: 'retransmit', label: 'Retransmissions', icon: AlertTriangle, href: '#retransmit' },
-    { id: 'revolutions', label: 'Revolutions', icon: Wifi, href: '#revolutions' },
+  const mainNavItems: { id: NavTabId; label: string; icon: React.ElementType }[] = [
+    { id: 'mission-control', label: 'Mission Control', icon: LayoutDashboard },
+    { id: 'transmission', label: 'Live Downlink', icon: Radio },
+    { id: 'ml-gallery', label: 'AI Imagery', icon: Images },
+    { id: 'metrics', label: 'Signal Analytics', icon: BarChart3 },
+    { id: 'retransmit', label: 'Retransmissions', icon: RotateCcw },
+    { id: 'revolutions', label: 'Orbit Windows', icon: Globe },
+  ];
+
+  const bottomNavItems: { id: NavTabId; label: string; icon: React.ElementType }[] = [
+    { id: 'settings', label: 'Settings', icon: Settings },
+    { id: 'diagnostics', label: 'Diagnostics', icon: Cpu },
   ];
 
   return (
-    <div className="min-h-screen bg-space-950 text-white font-mono">
+    <div className="min-h-screen bg-[#040711] text-slate-100 font-sans flex antialiased selection:bg-cyan-500/30 selection:text-white">
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed left-0 top-0 z-40 h-screen bg-space-900 border-r border-white/10 transition-all duration-300',
-          sidebarOpen ? 'w-64' : 'w-20'
+          'fixed left-0 top-0 z-40 h-screen bg-[#070D1C] border-r border-slate-800/80 flex flex-col justify-between transition-all duration-300 shadow-2xl',
+          sidebarOpen ? 'w-60' : 'w-[72px]'
         )}
       >
-        <div className="flex flex-col h-full">
-          {/* Logo */}
-          <div className="flex items-center gap-3 px-4 py-6 border-b border-white/10">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-neuronex-500 to-neuronex-700 flex items-center justify-center">
-              <Satellite className="w-6 h-6 text-white" />
-            </div>
-            {sidebarOpen && (
-              <div>
-                <h1 className="font-space font-bold text-lg text-white">Neuronex</h1>
-                <p className="text-xs text-neuronex-400">Downlink Dashboard</p>
+        <div className="flex flex-col h-full overflow-hidden">
+          {/* Brand Header */}
+          <div className="px-4 py-5 border-b border-slate-800/80 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-gradient-to-tr from-teal-600 via-cyan-500 to-blue-600 p-0.5 flex items-center justify-center shadow-md shadow-cyan-950/50">
+                <div className="w-full h-full bg-[#070D1C] rounded-[7px] flex items-center justify-center">
+                  <Satellite className="w-5 h-5 text-cyan-400" />
+                </div>
               </div>
-            )}
-          </div>
-
-          {/* Connection Status */}
-          <div className={cn('px-4 py-3 border-b border-white/10', sidebarOpen ? '' : 'justify-center')}>
-            <div className="flex items-center gap-2">
-              <div className={cn('w-2 h-2 rounded-full', connected ? 'bg-signal-excellent' : 'bg-signal-critical')} />
               {sidebarOpen && (
-                <span className="text-xs font-medium uppercase tracking-wider">
-                  {statusText}
-                </span>
+                <div>
+                  <h1 className="font-space font-black text-base text-white tracking-widest leading-none">
+                    NEURONEX
+                  </h1>
+                  <p className="text-[9px] font-mono tracking-wider font-semibold text-cyan-400/90 uppercase mt-1">
+                    Edge AI Downlink
+                  </p>
+                </div>
               )}
             </div>
           </div>
 
-          {/* Stats Summary */}
-          {sidebarOpen && stats && (
-            <div className="px-4 py-3 border-b border-white/10 space-y-2 text-xs">
-              <div className="flex justify-between text-neuronex-300">
-                <span>Total Images</span>
-                <span className="text-white font-medium">{stats.total}</span>
-              </div>
-              <div className="flex justify-between text-neuronex-300">
-                <span>Transmitting</span>
-                <span className="text-blue-400 font-medium">{stats.transmitting}</span>
-              </div>
-              <div className="flex justify-between text-neuronex-300">
-                <span>Complete</span>
-                <span className="text-green-400 font-medium">{stats.complete}</span>
-              </div>
-              <div className="flex justify-between text-neuronex-300">
-                <span>Pending</span>
-                <span className="text-yellow-400 font-medium">{stats.pending}</span>
-              </div>
-            </div>
-          )}
-
-          {/* Navigation */}
-          <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
-            {navItems.map((item) => (
-              <a
-                key={item.id}
-                href={item.href}
-                className={cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors',
-                  'hover:bg-white/5',
-                  sidebarOpen ? 'justify-start' : 'justify-center'
-                )}
-                title={sidebarOpen ? undefined : item.label}
-              >
-                <item.icon className="w-5 h-5 text-neuronex-400" />
-                {sidebarOpen && <span className="text-sm font-medium text-white">{item.label}</span>}
-              </a>
-            ))}
+          {/* Main Navigation */}
+          <nav className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto">
+            {mainNavItems.map((item) => {
+              const isActive = activeTab === item.id;
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => onTabChange(item.id)}
+                  className={cn(
+                    'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-all duration-150',
+                    isActive
+                      ? 'bg-teal-500/15 text-cyan-300 border border-teal-500/30 shadow-sm shadow-teal-950/40 font-semibold'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 border border-transparent',
+                    sidebarOpen ? 'justify-start' : 'justify-center px-0'
+                  )}
+                  title={sidebarOpen ? undefined : item.label}
+                >
+                  <Icon
+                    className={cn(
+                      'w-4 h-4 shrink-0 transition-colors',
+                      isActive ? 'text-cyan-400' : 'text-slate-400 group-hover:text-slate-200'
+                    )}
+                  />
+                  {sidebarOpen && <span>{item.label}</span>}
+                </button>
+              );
+            })}
           </nav>
 
-          {/* Revolution Status */}
-          {sidebarOpen && status && (
-            <div className="px-4 py-3 border-t border-white/10">
-              <div className="text-xs text-neuronex-400 mb-2">REVOLUTION STATUS</div>
-              <div className="space-y-1 text-xs">
-                {status.active ? (
-                  <>
-                    <div className="flex justify-between">
-                      <span className="text-neuronex-300">Revolution</span>
-                      <span className="text-white font-medium">#{status.revolution?.revolution_num}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-neuronex-300">Time Left</span>
-                      <span className="text-yellow-400 font-medium">{status.time_remaining?.toFixed(0)}s</span>
-                    </div>
-                    <div className="h-1.5 bg-white/10 rounded-full overflow-hidden mt-2">
-                      <div
-                        className="h-full bg-blue-500 transition-all duration-500"
-                        style={{ width: `${((status.revolution?.window_duration_sec || 60) - (status.time_remaining || 0)) / (status.revolution?.window_duration_sec || 60) * 100}%` }}
-                      />
-                    </div>
-                  </>
-                ) : (
-                  <div className="text-center text-neuronex-500">
-                    Next in {status.time_until_next ? `${Math.ceil(status.time_until_next / 60)} min` : '—'}
-                  </div>
+          {/* Bottom Settings / Diagnostics */}
+          <div className="p-3 border-t border-slate-800/80 space-y-1.5">
+            {bottomNavItems.map((item) => {
+              const isActive = activeTab === item.id;
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => onTabChange(item.id)}
+                  className={cn(
+                    'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-150',
+                    isActive
+                      ? 'bg-teal-500/15 text-cyan-300 border border-teal-500/30'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 border border-transparent',
+                    sidebarOpen ? 'justify-start' : 'justify-center px-0'
+                  )}
+                  title={sidebarOpen ? undefined : item.label}
+                >
+                  <Icon className="w-4 h-4 shrink-0" />
+                  {sidebarOpen && <span>{item.label}</span>}
+                </button>
+              );
+            })}
+
+            {/* Connection Status Badge in Sidebar */}
+            <div className="pt-2">
+              <div
+                className={cn(
+                  'flex items-center gap-2 p-2 rounded-lg bg-slate-950/70 border border-slate-800/80 text-[10px] font-mono',
+                  sidebarOpen ? 'justify-between' : 'justify-center'
                 )}
-              </div>
-            </div>
-          )}
-
-          {/* Toggle Button */}
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className={cn(
-              'absolute -right-2 top-1/2 -translate-y-1/2 w-4 h-10 rounded-r-lg bg-white/5',
-              'hover:bg-white/10 transition-colors flex items-center justify-center'
-            )}
-            aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
-          >
-            {sidebarOpen ? <ChevronLeft className="w-4 h-4 text-neuronex-400" /> : <ChevronRight className="w-4 h-4 text-neuronex-400" />}
-          </button>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className={cn('transition-all duration-300', sidebarOpen ? 'ml-64' : 'ml-20')}>
-        {/* Top Bar */}
-        <header className="sticky top-0 z-30 bg-space-900/80 backdrop-blur-sm border-b border-white/10 px-6 py-4">
-          <div className="max-w-full flex items-center justify-between">
-            <h2 className="font-space font-bold text-xl text-white">Dashboard</h2>
-            <div className="flex items-center gap-4">
-              <button className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors" title="Settings">
-                <Settings className="w-5 h-5 text-neuronex-400" />
-              </button>
-              <div className="flex items-center gap-2 text-xs text-neuronex-400">
-                <span>v1.0.0</span>
+              >
+                <div className="flex items-center gap-2">
+                  <span
+                    className={cn(
+                      'w-2 h-2 rounded-full shrink-0',
+                      isMock
+                        ? 'bg-cyan-400 shadow-sm shadow-cyan-400/80 animate-pulse'
+                        : connected
+                        ? 'bg-emerald-400 shadow-sm shadow-emerald-400/80 animate-pulse'
+                        : 'bg-rose-500'
+                    )}
+                  />
+                  {sidebarOpen && (
+                    <span className="font-semibold text-slate-300 uppercase tracking-wider">
+                      {statusText}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </div>
-        </header>
+        </div>
 
-        {/* Content */}
-        <div className="p-6 max-w-full">
+        {/* Sidebar Collapse Toggle Button */}
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="absolute -right-3 top-16 w-6 h-6 rounded-full bg-[#070D1C] border border-slate-700 text-slate-400 hover:text-white flex items-center justify-center shadow-lg transition-transform hover:scale-105"
+          aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+        >
+          {sidebarOpen ? <ChevronLeft className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+        </button>
+      </aside>
+
+      {/* Main App Content Viewport */}
+      <main
+        className={cn(
+          'flex-1 min-h-screen transition-all duration-300 bg-gradient-to-b from-[#060B18] via-[#040711] to-[#02040A] p-6 lg:p-8',
+          sidebarOpen ? 'ml-60' : 'ml-[72px]'
+        )}
+      >
+        <div className="max-w-[1600px] mx-auto">
           {children}
         </div>
       </main>
