@@ -10,6 +10,7 @@ export function SignalAnalyticsHeader() {
   const [utcTime, setUtcTime] = useState<string>('');
 
   const isMock = mode === 'mock';
+  const isReplay = mode === 'replay';
   const activeRevNum = revStatus?.revolution?.revolution_num ?? null;
 
   useEffect(() => {
@@ -25,60 +26,64 @@ export function SignalAnalyticsHeader() {
   }, []);
 
   return (
-    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-2 border-b border-slate-800/80">
+    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pb-3 border-b border-[#131E35]">
       {/* Title & Description */}
       <div>
-        <div className="flex items-center gap-2.5">
-          <div className="p-1.5 rounded-lg bg-cyan-950/60 border border-cyan-500/30 text-cyan-400">
-            <Radio className="w-5 h-5" />
+        <div className="flex items-center gap-2">
+          <div className="p-1 rounded bg-[#0D1830] border border-cyan-500/30 text-cyan-400">
+            <Radio className="w-4 h-4" />
           </div>
-          <div>
-            <h1 className="text-xl font-bold font-space tracking-wide text-white uppercase flex items-center gap-2">
-              SIGNAL ANALYTICS
-              <span className="text-xs font-mono font-medium px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
-                RF TELEMETRY
-              </span>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold tracking-tight text-white">
+              Signal Analytics
             </h1>
-            <p className="text-xs text-slate-400 font-mono mt-0.5">
-              Real-time RF link performance and downlink quality
-            </p>
+            <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-[#0D1830] text-cyan-400 border border-cyan-500/30">
+              RF Telemetry
+            </span>
           </div>
         </div>
+        <p className="text-xs text-slate-400 font-normal mt-0.5">
+          Real-time RF link performance, carrier modulation, and SNR telemetry
+        </p>
       </div>
 
       {/* Right Telemetry Status Badges */}
-      <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 text-xs font-mono">
+      <div className="flex flex-wrap items-center gap-2.5 text-xs">
         {/* Active Revolution Badge */}
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0B132B] border border-cyan-900/40 text-slate-300 shadow-sm">
-          <Orbit className="w-3.5 h-3.5 text-cyan-400 animate-spin-slow" />
-          <span className="text-slate-400">PASS:</span>
-          <span className="text-cyan-300 font-bold">{activeRevNum === null ? '—' : `REV #${activeRevNum}`}</span>
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#070D1A] border border-[#131E35] text-slate-300">
+          <Orbit className="w-3.5 h-3.5 text-cyan-400" />
+          <span className="text-slate-400 text-[11px]">Pass:</span>
+          <span className="text-cyan-300 font-bold font-mono text-[11px] tabular-nums">{activeRevNum === null ? '—' : `Rev #${activeRevNum}`}</span>
         </div>
 
         {/* UTC Clock */}
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0B132B] border border-cyan-900/40 text-slate-300 shadow-sm">
-          <Clock className="w-3.5 h-3.5 text-teal-400" />
-          <span className="text-slate-200 font-semibold tracking-wider">{utcTime || '--:--:-- UTC'}</span>
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#070D1A] border border-[#131E35] text-slate-300">
+          <Clock className="w-3.5 h-3.5 text-slate-400" />
+          <span className="text-slate-200 font-semibold font-mono tracking-wider text-[11px] tabular-nums">{utcTime || '--:--:-- UTC'}</span>
         </div>
 
         {/* Connection Mode Indicator */}
         <div
           className={cn(
-            'flex items-center gap-2 px-3 py-1.5 rounded-lg border font-semibold tracking-wider text-[11px] shadow-sm',
+            'flex items-center gap-1.5 px-2.5 py-1 rounded border font-semibold tracking-wider text-[11px]',
             isMock
-              ? 'bg-cyan-950/50 text-cyan-300 border-cyan-500/40'
+              ? 'bg-[#070D1A] text-cyan-300 border-cyan-500/30'
+              : isReplay
+              ? 'bg-[#070D1A] text-amber-300 border-amber-500/30'
               : connected
-              ? 'bg-emerald-950/50 text-emerald-300 border-emerald-500/40'
-              : 'bg-rose-950/50 text-rose-300 border-rose-500/40'
+              ? 'bg-[#070D1A] text-emerald-300 border-emerald-500/30'
+              : 'bg-[#070D1A] text-rose-300 border-rose-500/30'
           )}
         >
           <span
             className={cn(
-              'w-2 h-2 rounded-full',
+              'w-1.5 h-1.5 rounded-full',
               isMock
-                ? 'bg-cyan-400 shadow-sm shadow-cyan-400 animate-pulse'
+                ? 'bg-cyan-400'
+                : isReplay
+                ? 'bg-amber-400'
                 : connected
-                ? 'bg-emerald-400 shadow-sm shadow-emerald-400 animate-pulse'
+                ? 'bg-emerald-400'
                 : 'bg-rose-500'
             )}
           />

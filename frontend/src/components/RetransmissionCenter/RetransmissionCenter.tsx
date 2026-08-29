@@ -52,11 +52,10 @@ export function RetransmissionCenter() {
     }
   };
 
-  // Auto-select first retransmission if none selected and data exists
   const activeSelected = selectedRetrans ?? (retransmissions[0] || null);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 pb-6">
       {/* 1. Page Header */}
       <RetransmissionHeader />
 
@@ -67,28 +66,28 @@ export function RetransmissionCenter() {
 
       {/* Offline Alert */}
       {isOffline && (
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-rose-950/60 border border-rose-500/40 text-rose-300 text-xs font-mono">
-          <WifiOff className="w-4 h-4 text-rose-400 animate-pulse" />
-          <span>BACKEND OFFLINE — DISPLAYING LOCAL RETRANSMISSION ARQ BUFFER</span>
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#180A12] border border-rose-500/40 text-rose-300 text-xs">
+          <WifiOff className="w-3.5 h-3.5 text-rose-400" />
+          <span>Backend Offline — Displaying Local Retransmission ARQ Buffer</span>
         </div>
       )}
 
       {/* 3. Filter Tabs */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex items-center justify-between gap-3">
         <RetransmissionTabs
           selected={filter}
           onChange={setFilter}
           counts={counts}
         />
-        <span className="text-[11px] font-mono text-slate-400 hidden sm:inline">
-          Selective Segment ARQ: <strong className="text-cyan-300">Resends only dropped chunks</strong>
+        <span className="text-[10px] text-slate-400 hidden sm:inline">
+          Selective ARQ: <strong className="text-cyan-300">Resends only dropped chunks</strong>
         </span>
       </div>
 
       {/* 4. Main Two-Column Layout: Table + Detail Panel */}
-      <div className="grid grid-cols-1 2xl:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 2xl:grid-cols-12 gap-4">
         {/* Left Column: Retransmissions Engineering Table (7 cols) */}
-        <div className="2xl:col-span-7 space-y-4 min-w-0">
+        <div className="2xl:col-span-7 space-y-3 min-w-0">
           <RetransmissionTable
             retransmissions={retransmissions}
             selectedId={activeSelected?.id ?? null}

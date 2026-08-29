@@ -49,26 +49,25 @@ export function SignalKpis({ signalData, deliveryMetric, activeThroughput }: Sig
   // Packet Success
   const { attempted, confirmed, percentage: successRate, health } = deliveryMetric;
   const deliveryBadgeClass = health === 'OPTIMAL'
-    ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+    ? 'bg-[#062D24] text-emerald-300 border-emerald-500/30'
     : health === 'GOOD'
-    ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30'
+    ? 'bg-[#0E1B38] text-cyan-300 border-cyan-500/30'
     : health === 'DEGRADED'
-    ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+    ? 'bg-[#2B1B0A] text-amber-300 border-amber-500/30'
     : health === 'POOR'
-    ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
-    : 'bg-slate-800/60 text-slate-400 border-slate-700';
+    ? 'bg-[#2B0A12] text-rose-300 border-rose-500/30'
+    : 'bg-slate-800 text-slate-400 border-slate-700';
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
       {/* 1. RSSI KPI */}
       <KpiCard
-        title="RSSI"
-        subtitle="Received Signal Strength"
-        icon={<Signal className="w-4 h-4 text-cyan-400" />}
+        title="Carrier RSSI"
+        icon={<Signal className="w-3.5 h-3.5 text-cyan-400" />}
         value={`${currentRssi !== null ? currentRssi : '—'}`}
         unit={currentRssi === null ? '' : 'dBm'}
         qualityBadge={
-          <span className={cn('px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase border', getSignalQualityBgClass(currentRssi))}>
+          <span className={cn('px-1.5 py-0.2 rounded text-[9px] font-semibold uppercase tracking-wider border', getSignalQualityBgClass(currentRssi))}>
             {getSignalQualityLabel(currentRssi)}
           </span>
         }
@@ -78,25 +77,24 @@ export function SignalKpis({ signalData, deliveryMetric, activeThroughput }: Sig
           { label: 'AVG', value: avgRssi === null ? '—' : `${avgRssi.toFixed(1)} dBm` },
         ]}
         sparklineData={rssiPoints}
-        sparklineColor="#06b6d4"
+        sparklineColor="#0ea5e9"
         valueColorClass={getSignalQualityClass(currentRssi)}
       />
 
       {/* 2. SNR KPI */}
       <KpiCard
-        title="SNR"
-        subtitle="Signal-to-Noise Ratio"
-        icon={<Activity className="w-4 h-4 text-teal-400" />}
+        title="Signal-to-Noise (SNR)"
+        icon={<Activity className="w-3.5 h-3.5 text-teal-400" />}
         value={`${currentSnr !== null ? currentSnr.toFixed(1) : '—'}`}
         unit={currentSnr === null ? '' : 'dB'}
         qualityBadge={
-          <span className={cn('px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase border', getSnrQualityBgClass(currentSnr))}>
+          <span className={cn('px-1.5 py-0.2 rounded text-[9px] font-semibold uppercase tracking-wider border', getSnrQualityBgClass(currentSnr))}>
             {getSnrQualityLabel(currentSnr)}
           </span>
         }
         stats={[
           { label: 'MIN', value: minSnr === null ? '—' : `${minSnr.toFixed(1)} dB` },
-          { label: 'MAX', value: maxSnr === null ? '—' : `${maxSnr.toFixed(1)} dB` },
+          { label: 'MAX', value: maxRssi === null ? '—' : `${maxSnr?.toFixed(1)} dB` },
           { label: 'AVG', value: avgSnr === null ? '—' : `${avgSnr.toFixed(1)} dB` },
         ]}
         sparklineData={snrPoints}
@@ -106,20 +104,19 @@ export function SignalKpis({ signalData, deliveryMetric, activeThroughput }: Sig
 
       {/* 3. Throughput KPI */}
       <KpiCard
-        title="THROUGHPUT"
-        subtitle="RF Link Data Rate"
-        icon={<Zap className="w-4 h-4 text-amber-400" />}
-        value={liveThroughput === null ? 'NO DATA' : formatBps(liveThroughput)}
+        title="Downlink Rate"
+        icon={<Zap className="w-3.5 h-3.5 text-amber-400" />}
+        value={liveThroughput === null ? 'No Data' : formatBps(liveThroughput)}
         unit=""
         qualityBadge={
-          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-amber-500/15 text-amber-300 border border-amber-500/30">
-            LIVE RATE
+          <span className="px-1.5 py-0.2 rounded text-[9px] font-semibold uppercase tracking-wider bg-[#2B1B0A] text-amber-300 border border-amber-500/30">
+            Live Rate
           </span>
         }
         stats={[
-          { label: 'SOURCE', value: liveThroughput === null ? 'UNAVAILABLE' : 'ACTIVE IMAGE' },
-          { label: 'UNIT', value: 'BITS / SEC' },
-          { label: 'STATE', value: liveThroughput === null ? 'WAITING' : 'LIVE' },
+          { label: 'SRC', value: liveThroughput === null ? 'UNAVAIL' : 'PAYLOAD' },
+          { label: 'UNIT', value: 'BITS/S' },
+          { label: 'STATE', value: liveThroughput === null ? 'WAIT' : 'ACTIVE' },
         ]}
         sparklineData={throughputPoints}
         sparklineColor="#f59e0b"
@@ -128,20 +125,19 @@ export function SignalKpis({ signalData, deliveryMetric, activeThroughput }: Sig
 
       {/* 4. Packet Success KPI */}
       <KpiCard
-        icon={<ShieldCheck className="w-4 h-4 text-emerald-400" />}
-        title="SEGMENT DELIVERY"
-        subtitle="Confirmed / Attempted"
-        value={successRate === null ? 'NO DATA' : `${successRate.toFixed(2)}%`}
+        icon={<ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />}
+        title="Segment Delivery"
+        value={successRate === null ? 'No Data' : `${successRate.toFixed(2)}%`}
         unit=""
         qualityBadge={
-          <span className={cn('px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase border', deliveryBadgeClass)}>
+          <span className={cn('px-1.5 py-0.2 rounded text-[9px] font-semibold uppercase tracking-wider border', deliveryBadgeClass)}>
             {health}
           </span>
         }
         stats={[
-          { label: 'CONFIRMED', value: `${confirmed.toLocaleString()}` },
-          { label: 'ATTEMPTED', value: `${attempted.toLocaleString()}` },
-          { label: 'UNCONFIRMED', value: `${Math.max(0, attempted - confirmed)} segs` },
+          { label: 'CONF', value: `${confirmed.toLocaleString()}` },
+          { label: 'ATTEMPT', value: `${attempted.toLocaleString()}` },
+          { label: 'LOSS', value: `${Math.max(0, attempted - confirmed)} segs` },
         ]}
         sparklineData={successRate === null ? [] : [successRate, successRate]}
         sparklineColor="#10b981"
@@ -153,7 +149,6 @@ export function SignalKpis({ signalData, deliveryMetric, activeThroughput }: Sig
 
 interface KpiCardProps {
   title: string;
-  subtitle: string;
   icon: React.ReactNode;
   value: string;
   unit?: string;
@@ -166,7 +161,6 @@ interface KpiCardProps {
 
 function KpiCard({
   title,
-  subtitle,
   icon,
   value,
   unit,
@@ -177,46 +171,43 @@ function KpiCard({
   valueColorClass,
 }: KpiCardProps) {
   return (
-    <div className="bg-[#0B132B]/85 backdrop-blur-md rounded-xl border border-cyan-900/30 p-4 flex flex-col justify-between hover:border-cyan-500/40 transition-all duration-200 shadow-lg shadow-black/40">
+    <div className="bg-[#080E1E] rounded-md border border-[#131E35] p-3.5 flex flex-col justify-between hover:border-[#1E2E52] transition-colors">
       {/* Top Title & Badge */}
       <div>
-        <div className="flex items-center justify-between gap-2 mb-2">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-slate-900/80 border border-slate-800 text-slate-300">
+        <div className="flex items-center justify-between gap-1.5 mb-1.5">
+          <div className="flex items-center gap-1.5">
+            <div className="text-slate-400">
               {icon}
             </div>
-            <div>
-              <h3 className="text-xs font-space font-bold text-slate-200 uppercase tracking-wider">
-                {title}
-              </h3>
-              <p className="text-[10px] font-mono text-slate-400">{subtitle}</p>
-            </div>
+            <h3 className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+              {title}
+            </h3>
           </div>
           {qualityBadge}
         </div>
 
         {/* Value and Sparkline Row */}
-        <div className="flex items-end justify-between my-3">
+        <div className="flex items-end justify-between my-2">
           <div>
-            <span className={cn('text-2xl lg:text-3xl font-black font-mono tracking-tight', valueColorClass)}>
+            <span className={cn('text-xl sm:text-2xl font-bold font-mono tracking-tight tabular-nums', valueColorClass)}>
               {value}
             </span>
-            {unit && <span className="text-xs font-mono text-slate-400 ml-1.5">{unit}</span>}
+            {unit && <span className="text-xs font-normal text-slate-400 font-mono ml-1">{unit}</span>}
           </div>
 
           {/* Mini Sparkline */}
-          <div className="w-20 h-8 flex items-center justify-end">
+          <div className="w-16 h-6 flex items-center justify-end">
             <SvgSparkline data={sparklineData} stroke={sparklineColor} />
           </div>
         </div>
       </div>
 
       {/* Bottom Sub-stats */}
-      <div className="pt-2.5 border-t border-slate-800/80 grid grid-cols-3 gap-1 text-center">
+      <div className="pt-2 border-t border-[#131E35] grid grid-cols-3 gap-1 text-center">
         {stats.map((s, idx) => (
-          <div key={idx} className="bg-slate-950/40 rounded px-1 py-0.5 border border-slate-800/40">
-            <div className="text-[9px] font-mono text-slate-400">{s.label}</div>
-            <div className="text-[10px] font-mono font-bold text-slate-200 truncate">{s.value}</div>
+          <div key={idx} className="bg-[#050810] rounded px-1 py-0.5 border border-[#131E35]">
+            <div className="text-[8px] uppercase tracking-wide text-slate-500 font-mono">{s.label}</div>
+            <div className="text-[9px] font-mono font-semibold text-slate-200 truncate tabular-nums">{s.value}</div>
           </div>
         ))}
       </div>
@@ -228,7 +219,7 @@ function SvgSparkline({ data, stroke }: { data: number[]; stroke: string }) {
   if (!data || data.length < 2) {
     return (
       <div className="w-full h-full flex items-center justify-center">
-        <div className="w-full h-[1px] bg-slate-700" />
+        <div className="w-full h-[1px] bg-slate-800" />
       </div>
     );
   }
@@ -236,9 +227,9 @@ function SvgSparkline({ data, stroke }: { data: number[]; stroke: string }) {
   const min = Math.min(...data);
   const max = Math.max(...data);
   const range = max - min === 0 ? 1 : max - min;
-  const width = 80;
-  const height = 30;
-  const padding = 2;
+  const width = 64;
+  const height = 24;
+  const padding = 1;
 
   const points = data
     .map((d, i) => {
@@ -253,7 +244,7 @@ function SvgSparkline({ data, stroke }: { data: number[]; stroke: string }) {
       <polyline
         fill="none"
         stroke={stroke}
-        strokeWidth="1.75"
+        strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
         points={points}

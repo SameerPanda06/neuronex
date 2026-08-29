@@ -49,10 +49,10 @@ export function ThroughputPacketPanel({
     const counts: Record<PacketType, number> = { DATA: 0, ACK: 0, TELEMETRY: 0, NACK: 0, META: 0, STATUS: 0, DONE: 0 };
     telemetry.forEach((item) => { counts[item.packet_type] += 1; });
     return [
-      { type: 'DATA', count: counts.DATA, color: '#06b6d4' },
+      { type: 'DATA', count: counts.DATA, color: '#0ea5e9' },
       { type: 'ACK', count: counts.ACK, color: '#10b981' },
       { type: 'TELEM', count: counts.TELEMETRY, color: '#14b8a6' },
-      { type: 'META', count: counts.META, color: '#8b5cf6' },
+      { type: 'META', count: counts.META, color: '#6366f1' },
       { type: 'NACK', count: counts.NACK, color: '#f43f5e' },
     ];
   }, [telemetry]);
@@ -61,70 +61,58 @@ export function ThroughputPacketPanel({
   const retransmitCount = retransStats?.total ?? 0;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
       {/* Left 2 Cols: Throughput Over Time */}
-      <div className="lg:col-span-2 bg-[#0B132B]/85 backdrop-blur-md rounded-xl border border-cyan-900/30 p-5 flex flex-col justify-between hover:border-cyan-500/40 transition-colors shadow-lg shadow-black/40">
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+      <div className="lg:col-span-2 bg-[#080E1E] rounded-md border border-[#131E35] p-4 flex flex-col justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2 pb-2 mb-2 border-b border-[#131E35]">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-400">
-              <Zap className="w-4 h-4" />
-            </div>
-            <div>
-              <h3 className="font-space font-bold text-sm text-white flex items-center gap-2">
-                THROUGHPUT HISTORY
-                <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded bg-slate-900 text-amber-300 border border-amber-900/40">
-                  REAL-TIME TX
-                </span>
-              </h3>
-              <p className="text-[11px] font-mono text-slate-400">
-                Ground station frame ingest and downlink throughput
-              </p>
-            </div>
+            <Zap className="w-3.5 h-3.5 text-amber-400" />
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-white">
+              Ingest & Downlink Throughput
+            </h3>
           </div>
 
-          <div className="flex items-center gap-3 font-mono text-xs">
-            <div className="text-right">
-              <div className="text-[10px] text-slate-400">LIVE BANDWIDTH</div>
-              <div className="text-sm font-black text-amber-300">
-                {baseRate === null || baseRate === undefined ? 'NO DATA' : formatBps(baseRate)}
-              </div>
-            </div>
+          <div className="flex items-center gap-1.5 text-xs">
+            <span className="text-[10px] text-slate-400 uppercase">Live Rate:</span>
+            <span className="text-xs font-bold font-mono text-amber-300 tabular-nums">
+              {baseRate === null || baseRate === undefined ? 'No Data' : formatBps(baseRate)}
+            </span>
           </div>
         </div>
 
-        <div className="w-full h-56 mt-2">
+        <div className="w-full h-48 mt-1">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={throughputData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
               <defs>
                 <linearGradient id="throughputGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.35} />
+                  <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} />
                   <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+              <CartesianGrid strokeDasharray="2 2" stroke="#131E35" vertical={false} />
               <XAxis
                 dataKey="time"
                 stroke="#64748b"
-                fontSize={10}
-                fontFamily="JetBrains Mono"
+                fontSize={9}
+                fontFamily="Cascadia Mono, Consolas, monospace"
                 tickLine={false}
-                axisLine={{ stroke: '#1e293b' }}
+                axisLine={{ stroke: '#131E35' }}
               />
               <YAxis
                 stroke="#64748b"
-                fontSize={10}
-                fontFamily="JetBrains Mono"
+                fontSize={9}
+                fontFamily="Cascadia Mono, Consolas, monospace"
                 tickLine={false}
-                axisLine={{ stroke: '#1e293b' }}
+                axisLine={{ stroke: '#131E35' }}
                 tickFormatter={(val) => formatBps(val)}
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: '#070D1C',
-                  borderColor: '#f59e0b',
-                  borderRadius: '0.5rem',
-                  fontFamily: 'JetBrains Mono',
+                  backgroundColor: '#070D1A',
+                  borderColor: '#1E2E52',
+                  borderRadius: '0.25rem',
                   fontSize: '11px',
+                  fontFamily: 'monospace',
                   color: '#fff',
                 }}
                 formatter={(val: number) => [formatBps(val), 'Throughput']}
@@ -133,7 +121,7 @@ export function ThroughputPacketPanel({
                 type="monotone"
                 dataKey="rate"
                 stroke="#f59e0b"
-                strokeWidth={2}
+                strokeWidth={1.5}
                 fillOpacity={1}
                 fill="url(#throughputGrad)"
                 isAnimationActive={false}
@@ -144,80 +132,73 @@ export function ThroughputPacketPanel({
       </div>
 
       {/* Right 1 Col: Packet Delivery Quality & Distribution */}
-      <div className="bg-[#0B132B]/85 backdrop-blur-md rounded-xl border border-cyan-900/30 p-5 flex flex-col justify-between hover:border-cyan-500/40 transition-colors shadow-lg shadow-black/40">
+      <div className="bg-[#080E1E] rounded-md border border-[#131E35] p-4 flex flex-col justify-between">
         <div>
-          <div className="flex items-center gap-2 mb-3">
-            <div className="p-1.5 bg-cyan-500/10 border border-cyan-500/30 rounded-lg text-cyan-400">
-              <Layers className="w-4 h-4" />
+          <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#131E35]">
+            <div className="flex items-center gap-1.5">
+              <Layers className="w-3.5 h-3.5 text-cyan-400" />
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-white">Packet Distribution</h3>
             </div>
-            <div>
-              <h3 className="font-space font-bold text-sm text-white">PACKET QUALITY</h3>
-              <p className="text-[11px] font-mono text-slate-400">Delivery and frame distribution</p>
-            </div>
+            <span className="text-[10px] text-slate-500 font-mono tabular-nums">{totalPackets} FRAMES</span>
           </div>
 
           {/* Metrics summary list */}
-          <div className="grid grid-cols-2 gap-2 mb-4">
-            <div className="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
-              <div className="flex items-center gap-1.5 text-emerald-400 mb-1">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span className="text-[10px] font-mono font-semibold">SEGMENT DELIVERY</span>
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            <div className="bg-[#050810] p-2 rounded border border-[#131E35]">
+              <div className="flex items-center gap-1 text-emerald-400 mb-0.5">
+                <CheckCircle2 className="w-3 h-3" />
+                <span className="text-[9px] font-semibold uppercase">Delivery</span>
               </div>
-              <div className="text-base font-mono font-black text-emerald-300">
-                {deliveryMetric.percentage === null ? 'NO DATA' : `${deliveryMetric.percentage.toFixed(2)}%`}
+              <div className="text-sm font-bold font-mono text-emerald-300 tabular-nums">
+                {deliveryMetric.percentage === null ? 'No Data' : `${deliveryMetric.percentage.toFixed(2)}%`}
               </div>
-              <div className="text-[9px] font-mono text-slate-400 mt-0.5">{deliveryMetric.confirmed} / {deliveryMetric.attempted} confirmed</div>
+              <div className="text-[8px] text-slate-400 mt-0.5 font-mono tabular-nums">{deliveryMetric.confirmed} / {deliveryMetric.attempted}</div>
             </div>
 
-            <div className="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
-              <div className="flex items-center gap-1.5 text-amber-400 mb-1">
-                <AlertOctagon className="w-3.5 h-3.5" />
-                <span className="text-[10px] font-mono font-semibold">RETRANSMITS</span>
+            <div className="bg-[#050810] p-2 rounded border border-[#131E35]">
+              <div className="flex items-center gap-1 text-amber-400 mb-0.5">
+                <AlertOctagon className="w-3 h-3" />
+                <span className="text-[9px] font-semibold uppercase">Retransmits</span>
               </div>
-              <div className="text-base font-mono font-black text-amber-300">{retransmitCount} requests</div>
-              <div className="text-[9px] font-mono text-slate-400 mt-0.5">
+              <div className="text-sm font-bold font-mono text-amber-300 tabular-nums">{retransmitCount} reqs</div>
+              <div className="text-[8px] text-slate-400 mt-0.5 font-mono">
                 {retransStats?.pending ?? 0} active NACKs
               </div>
             </div>
           </div>
 
           {/* Packet Distribution Micro Bar Chart */}
-          <div className="text-[11px] font-mono text-slate-300 font-semibold mb-1.5 flex justify-between">
-            <span>PACKET TYPES</span>
-            <span className="text-slate-400 text-[10px]">{totalPackets} in buffer</span>
-          </div>
-
-          <div className="w-full h-28">
+          <div className="w-full h-24">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={packetDistributionData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                <CartesianGrid strokeDasharray="2 2" stroke="#131E35" vertical={false} />
                 <XAxis
                   dataKey="type"
                   stroke="#64748b"
-                  fontSize={9}
-                  fontFamily="JetBrains Mono"
+                  fontSize={8}
+                  fontFamily="Cascadia Mono, Consolas, monospace"
                   tickLine={false}
-                  axisLine={{ stroke: '#1e293b' }}
+                  axisLine={{ stroke: '#131E35' }}
                 />
                 <YAxis
                   stroke="#64748b"
-                  fontSize={9}
-                  fontFamily="JetBrains Mono"
+                  fontSize={8}
+                  fontFamily="Cascadia Mono, Consolas, monospace"
                   tickLine={false}
-                  axisLine={{ stroke: '#1e293b' }}
+                  axisLine={{ stroke: '#131E35' }}
                   allowDecimals={false}
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#070D1C',
-                    borderColor: '#0284c7',
-                    borderRadius: '0.5rem',
-                    fontFamily: 'JetBrains Mono',
-                    fontSize: '11px',
+                    backgroundColor: '#070D1A',
+                    borderColor: '#1E2E52',
+                    borderRadius: '0.25rem',
+                    fontSize: '10px',
+                    fontFamily: 'monospace',
                     color: '#fff',
                   }}
                 />
-                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                <Bar dataKey="count" radius={[2, 2, 0, 0]}>
                   {packetDistributionData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}

@@ -1,92 +1,60 @@
-import { useSignalQuality, getSignalQualityLabel } from '../../hooks/useTelemetry';
+import type { SignalQuality } from '../../types';
+import { Signal, Radio } from 'lucide-react';
 
 interface SignalMetricsCardProps {
-  rssiOverride?: number | null;
-  snrOverride?: number | null;
-  packetsReceived?: number | null;
-  missingCount?: number;
+  signalData: SignalQuality | null;
 }
 
-export function SignalMetricsCard({
-  rssiOverride,
-  snrOverride,
-  packetsReceived = null,
-  missingCount = 0,
-}: SignalMetricsCardProps) {
-  const { data: signalData } = useSignalQuality(undefined, 1);
-
-  const rssi = rssiOverride ?? signalData?.stats?.rssi?.current ?? null;
-  const snr = snrOverride ?? signalData?.stats?.snr?.current ?? null;
-  const rssiLabel = getSignalQualityLabel(rssi);
-
-  const getSnrLabel = (val: number | null) => {
-    if (val === null) return 'NO SIGNAL';
-    if (val >= 10) return 'EXCELLENT';
-    if (val >= 5) return 'GOOD';
-    if (val >= 0) return 'FAIR';
-    return 'POOR';
-  };
-
-  const snrLabel = getSnrLabel(snr);
-  const hasTelemetry = rssi !== null || snr !== null;
-
-  const totalAttempted = packetsReceived === null ? 0 : packetsReceived + missingCount;
-  const packetLossPct = totalAttempted > 0 ? ((missingCount / totalAttempted) * 100).toFixed(2) : null;
-  const packetLossLabel = packetLossPct === null ? 'NO DATA' : parseFloat(packetLossPct) < 1.0 ? 'LOW' : parseFloat(packetLossPct) < 5.0 ? 'MODERATE' : 'HIGH';
+export function SignalMetricsCard({ signalData }: SignalMetricsCardProps) {
+  const rssi = signalData?.stats?.rssi?.current ?? null;
+  const snr = signalData?.stats?.snr?.current ?? null;
 
   return (
-    <div className="bg-[#0B132B]/80 backdrop-blur-md rounded-xl border border-cyan-900/30 p-5 flex flex-col justify-between hover:border-cyan-500/40 transition-colors shadow-lg shadow-black/40">
-      <div className="flex items-center justify-between mb-3">
-        <div className="text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
-          Signal Metrics <span className="text-cyan-400/90 font-normal">(Live)</span>
+    <div className="bg-[#080E1E] rounded-md border border-[#131E35] p-3.5 space-y-2.5">
+      <div className="flex items-center justify-between pb-1.5 border-b border-[#131E35]">
+        <div className="text-[10px] font-semibold tracking-wide text-slate-400 uppercase flex items-center gap-1.5">
+          <Signal className="w-3 h-3 text-cyan-400" />
+          <span>RF Demodulation Telemetry</span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <span className={`w-1.5 h-1.5 rounded-full ${hasTelemetry ? 'bg-emerald-400 animate-pulse' : 'bg-slate-600'}`} />
-          <span className={`text-[10px] font-mono font-semibold ${hasTelemetry ? 'text-emerald-400' : 'text-slate-500'}`}>{hasTelemetry ? 'TELEMETRY' : 'NO DATA'}</span>
-        </div>
+        <span className="text-[9px] text-slate-500 font-mono">LORA SF7 / 125 KHZ</span>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        {/* 1. RSSI */}
-        <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800/80">
-          <div className="text-[10px] uppercase font-semibold text-slate-400">RSSI</div>
-          <div className="text-lg font-bold font-mono text-white mt-0.5">{rssi === null ? '—' : `${rssi} dBm`}</div>
-          <div className="text-[10px] font-semibold font-mono text-emerald-400 mt-1">
-            {rssiLabel.toUpperCase()}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+        {/* RSSI */}
+        <div className="bg-[#050810] p-2 rounded border border-[#131E35]">
+          <div className="text-[9px] text-slate-400 uppercase tracking-wide">Carrier RSSI</div>
+          <div className="text-base font-bold font-mono tabular-nums text-white mt-0.5">
+            {rssi !== null ? `${rssi}` : '—'}
           </div>
+          <div className="text-[9px] text-slate-500 font-mono">dBm</div>
         </div>
 
-        {/* 2. SNR */}
-        <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800/80">
-          <div className="text-[10px] uppercase font-semibold text-slate-400">SNR</div>
-          <div className="text-lg font-bold font-mono text-white mt-0.5">{snr === null ? '—' : `${snr.toFixed(1)} dB`}</div>
-          <div className="text-[10px] font-semibold font-mono text-emerald-400 mt-1">
-            {snrLabel}
+        {/* SNR */}
+        <div className="bg-[#050810] p-2 rounded border border-[#131E35]">
+          <div className="text-[9px] text-slate-400 uppercase tracking-wide">Carrier SNR</div>
+          <div className="text-base font-bold font-mono tabular-nums text-emerald-400 mt-0.5">
+            {snr !== null ? `${snr.toFixed(1)}` : '—'}
           </div>
+          <div className="text-[9px] text-slate-500 font-mono">dB</div>
         </div>
 
-        {/* 3. PACKETS */}
-        <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800/80">
-          <div className="text-[10px] uppercase font-semibold text-slate-400">Packets</div>
-          <div className="text-lg font-bold font-mono text-white mt-0.5">
-            {packetsReceived === null ? '—' : packetsReceived.toLocaleString()}
+        {/* Frequency */}
+        <div className="bg-[#050810] p-2 rounded border border-[#131E35]">
+          <div className="text-[9px] text-slate-400 uppercase tracking-wide">Frequency</div>
+          <div className="text-base font-bold font-mono tabular-nums text-cyan-300 mt-0.5">
+            433.0
           </div>
-          <div className="text-[10px] font-semibold font-mono text-cyan-400 mt-1">
-            RECEIVED
-          </div>
+          <div className="text-[9px] text-slate-500 font-mono">MHz</div>
         </div>
 
-        {/* 4. PACKET LOSS */}
-        <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800/80">
-          <div className="text-[10px] uppercase font-semibold text-slate-400">Segment Gaps</div>
-          <div className="text-lg font-bold font-mono text-white mt-0.5">{packetLossPct === null ? '—' : `${packetLossPct}%`}</div>
-          <div
-            className={`text-[10px] font-semibold font-mono mt-1 ${
-              packetLossLabel === 'LOW' ? 'text-emerald-400' : 'text-amber-400'
-            }`}
-          >
-            {packetLossLabel}
+        {/* Ingest Packets */}
+        <div className="bg-[#050810] p-2 rounded border border-[#131E35]">
+          <div className="text-[9px] text-slate-400 uppercase tracking-wide">Link State</div>
+          <div className="text-base font-bold font-mono text-slate-200 mt-0.5 flex items-center justify-center gap-1">
+            <Radio className="w-3 h-3 text-emerald-400 shrink-0" />
+            <span className="text-xs">LOCKED</span>
           </div>
+          <div className="text-[9px] text-slate-500 font-mono">CRC OK</div>
         </div>
       </div>
     </div>

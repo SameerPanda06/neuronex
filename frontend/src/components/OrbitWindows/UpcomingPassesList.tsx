@@ -1,4 +1,4 @@
-import { Calendar, Clock, Orbit } from 'lucide-react';
+import { Orbit, Calendar, ArrowRight } from 'lucide-react';
 import { formatDate } from '../../utils/format';
 import type { Revolution } from '../../types';
 
@@ -7,64 +7,46 @@ interface UpcomingPassesListProps {
   onSelect: (rev: Revolution) => void;
 }
 
-export function UpcomingPassesList({ revolutions, onSelect }: UpcomingPassesListProps) {
-  const upcoming = revolutions.filter((r) => r.status === 'scheduled');
+export function UpcomingPassesList({
+  revolutions,
+  onSelect,
+}: UpcomingPassesListProps) {
+  const scheduled = revolutions.filter((r) => r.status === 'scheduled');
+
+  if (scheduled.length === 0) return null;
 
   return (
-    <div className="bg-[#0B132B]/85 backdrop-blur-md rounded-xl border border-cyan-900/30 p-5 space-y-4 shadow-xl shadow-black/40 font-mono">
-      <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-teal-950/60 border border-teal-500/30 text-teal-400">
-            <Calendar className="w-4 h-4" />
-          </div>
-          <div>
-            <h3 className="font-space font-bold text-sm text-white uppercase tracking-wider">
-              UPCOMING PASSES
-            </h3>
-            <p className="text-[10px] text-slate-400">Scheduled 60-second contact windows</p>
-          </div>
+    <div className="bg-[#080E1E] rounded-md border border-[#131E35] p-3.5 space-y-2.5">
+      <div className="flex items-center justify-between border-b border-[#131E35] pb-2">
+        <div className="flex items-center gap-1.5">
+          <Calendar className="w-3.5 h-3.5 text-cyan-400" />
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-white">
+            Upcoming Passes ({scheduled.length})
+          </h3>
         </div>
-        <span className="text-[10px] px-2 py-0.5 rounded bg-slate-900 text-teal-300 border border-teal-900/40 font-bold">
-          {upcoming.length} SCHEDULED
-        </span>
+        <span className="text-[10px] text-slate-500 font-mono">NEXT 24 HOURS</span>
       </div>
 
-      {upcoming.length === 0 ? (
-        <div className="p-6 text-center text-slate-500 text-xs">
-          <Orbit className="w-8 h-8 mx-auto mb-2 text-slate-600" />
-          <p>No further revolutions scheduled for today.</p>
-        </div>
-      ) : (
-        <div className="space-y-2.5">
-          {upcoming.map((rev) => (
-            <div
-              key={rev.id}
-              onClick={() => onSelect(rev)}
-              className="p-3 rounded-lg bg-[#070D1C] border border-slate-800/80 hover:border-cyan-500/40 transition-colors cursor-pointer group flex items-center justify-between gap-3 text-xs"
-            >
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-slate-200 group-hover:text-cyan-300 transition-colors">
-                    REV #{rev.revolution_num}
-                  </span>
-                  <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 uppercase font-bold">
-                    PLANNED
-                  </span>
-                </div>
-                <div className="text-[10px] text-slate-400 flex items-center gap-1">
-                  <Clock className="w-3 h-3 text-slate-500" />
-                  <span>{formatDate(rev.window_start)}</span>
-                </div>
-              </div>
-
-              <div className="text-right">
-                <div className="text-cyan-400 font-bold">{rev.window_duration_sec}s</div>
-                <div className="text-[9px] text-slate-500">Duration</div>
-              </div>
+      <div className="space-y-1">
+        {scheduled.slice(0, 3).map((rev) => (
+          <div
+            key={rev.id}
+            onClick={() => onSelect(rev)}
+            className="flex items-center justify-between p-2 rounded bg-[#050810] border border-[#131E35] hover:border-cyan-500/40 transition-colors cursor-pointer text-xs"
+          >
+            <div className="flex items-center gap-2">
+              <Orbit className="w-3.5 h-3.5 text-slate-400" />
+              <span className="font-mono font-bold text-white text-xs">Rev #{rev.revolution_num}</span>
+              <span className="text-slate-400 text-[10px] font-mono tabular-nums">{formatDate(rev.window_start)}</span>
             </div>
-          ))}
-        </div>
-      )}
+
+            <div className="flex items-center gap-2">
+              <span className="text-cyan-300 font-mono text-[10px] tabular-nums">{rev.window_duration_sec}s contact</span>
+              <ArrowRight className="w-3 h-3 text-slate-500" />
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

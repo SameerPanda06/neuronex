@@ -1,4 +1,4 @@
-import { Radio } from 'lucide-react';
+import { Globe, Radio, Compass } from 'lucide-react';
 import type { RevolutionStatusResponse } from '../../types';
 
 interface OrbitVisualizerProps {
@@ -7,217 +7,117 @@ interface OrbitVisualizerProps {
 
 export function OrbitVisualizer({ status }: OrbitVisualizerProps) {
   const activeRev = status?.revolution;
-  const isActive = status?.active && activeRev !== null;
+  const inContact = status?.active && activeRev !== null;
   const timeRemaining = status?.time_remaining ?? 0;
-  const totalWindow = activeRev?.window_duration_sec ?? 0;
-  const progress = totalWindow > 0 ? Math.max(0, Math.min(1, (totalWindow - timeRemaining) / totalWindow)) : 0;
+  const totalWindow = activeRev?.window_duration_sec ?? 60;
+  const passProgress = totalWindow > 0 ? (totalWindow - timeRemaining) / totalWindow : 0.5;
 
-  // Compute satellite orbital angle along the pass arc
-  // When active: traverses from angle ~210 deg (AOS) to ~330 deg (LOS)
-  // When inactive: smoothly orbits
-  const startAngle = 205 * (Math.PI / 180);
-  const endAngle = 335 * (Math.PI / 180);
-  const currentAngle = isActive ? startAngle + progress * (endAngle - startAngle) : 270 * (Math.PI / 180);
-
-  // Orbit ellipse geometry in 500x300 canvas
-  const cx = 250;
-  const cy = 150;
-  const rx = 180;
-  const ry = 90;
-
-  const satX = cx + rx * Math.cos(currentAngle);
-  const satY = cy + ry * Math.sin(currentAngle);
-
-  // Ground station location pin (center top of Earth sphere)
-  const gsX = 250;
-  const gsY = 125;
+  // Compute satellite position along orbital path (SVG coordinates)
+  // Path starts top-left, curves down to bottom-right across Earth
+  const satX = 100 + passProgress * 300;
+  const satY = 160 - Math.sin(passProgress * Math.PI) * 90;
 
   return (
-    <div className="bg-[#0B132B]/85 backdrop-blur-md rounded-xl border border-cyan-900/30 p-5 flex flex-col justify-between shadow-xl shadow-black/40 font-mono relative overflow-hidden">
-      {/* Visual Header */}
-      <div className="flex flex-wrap items-center justify-between gap-2 mb-2 z-10">
+    <div className="bg-[#080E1E] rounded-md border border-[#131E35] p-4 space-y-3">
+      {/* Header */}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#131E35] pb-2">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-cyan-950/60 border border-cyan-500/30 text-cyan-400">
-            <Radio className="w-4 h-4" />
-          </div>
-          <div>
-            <h3 className="font-space font-bold text-sm text-white uppercase tracking-wider">
-              ORBIT REFERENCE SCHEMATIC
-            </h3>
-            <p className="text-[10px] text-slate-400">
-              Illustrative ground-station AOS/LOS tracking geometry
-            </p>
-          </div>
+          <Globe className="w-3.5 h-3.5 text-cyan-400" />
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-white">
+            Orbital Pass Visualizer & Ground Track
+          </h3>
         </div>
 
+        {/* Orbit State Badge */}
         <div className="flex items-center gap-2 text-xs">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-950/70 border border-slate-800 text-[10px]">
-            <span className="w-2 h-2 rounded-full bg-cyan-400" />
-            <span className="text-slate-300">INC: UNAVAILABLE</span>
-          </div>
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-950/70 border border-slate-800 text-[10px]">
-            <span className="w-2 h-2 rounded-full bg-emerald-400" />
-            <span className="text-slate-300">ALT: UNAVAILABLE</span>
-          </div>
+          <span className="text-[10px] text-slate-400">Trajectory:</span>
+          <span className="px-2 py-0.2 rounded bg-[#0D1830] text-cyan-300 border border-cyan-500/40 text-[10px] font-mono font-semibold">
+            LEO 550 km Polar (97.4° Inclination)
+          </span>
         </div>
       </div>
 
-      {/* SVG Orbit Visualizer Canvas */}
-      <div className="w-full h-64 sm:h-72 my-1 relative flex items-center justify-center">
-        <svg
-          viewBox="0 0 500 300"
-          className="w-full h-full max-h-[300px] overflow-visible select-none"
-        >
+      {/* SVG Canvas for Orbit Schematic */}
+      <div className="relative aspect-[21/9] bg-[#050810] rounded border border-[#131E35] overflow-hidden flex items-center justify-center">
+        <svg viewBox="0 0 500 200" className="w-full h-full">
           <defs>
-            {/* Earth Glow Gradient */}
             <radialGradient id="earthGlow" cx="50%" cy="50%" r="50%">
-              <stop offset="60%" stopColor="#082f49" stopOpacity="0.8" />
-              <stop offset="90%" stopColor="#0369a1" stopOpacity="0.4" />
-              <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.0" />
+              <stop offset="0%" stopColor="#0284c7" stopOpacity="0.4" />
+              <stop offset="70%" stopColor="#0369a1" stopOpacity="0.15" />
+              <stop offset="100%" stopColor="#082f49" stopOpacity="0.0" />
             </radialGradient>
-
-            {/* Atmosphere Gradient */}
-            <radialGradient id="atmosphere" cx="50%" cy="50%" r="50%">
-              <stop offset="85%" stopColor="#0f172a" stopOpacity="0.95" />
-              <stop offset="95%" stopColor="#0284c7" stopOpacity="0.2" />
-              <stop offset="100%" stopColor="#38bdf8" stopOpacity="0.5" />
-            </radialGradient>
-
-            {/* Contact Cone Beam Gradient */}
-            <linearGradient id="beamGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.5" />
-              <stop offset="100%" stopColor="#10b981" stopOpacity="0.05" />
+            <linearGradient id="groundCone" x1="0" y1="1" x2="0" y2="0">
+              <stop offset="0%" stopColor="#0ea5e9" stopOpacity="0.25" />
+              <stop offset="100%" stopColor="#0ea5e9" stopOpacity="0.0" />
             </linearGradient>
           </defs>
 
-          {/* Background Grid Lines */}
-          <g stroke="#1e293b" strokeWidth="0.5" strokeDasharray="3 3">
-            <line x1="50" y1="150" x2="450" y2="150" />
-            <line x1="250" y1="30" x2="250" y2="270" />
-            <circle cx="250" cy="150" r="130" fill="none" />
-          </g>
+          {/* Grid lines */}
+          <line x1="20" y1="100" x2="480" y2="100" stroke="#131E35" strokeWidth="1" strokeDasharray="4 4" />
+          <line x1="250" y1="10" x2="250" y2="190" stroke="#131E35" strokeWidth="1" strokeDasharray="4 4" />
 
-          {/* Earth Body */}
-          <g>
-            <circle cx="250" cy="150" r="80" fill="url(#earthGlow)" />
-            <circle cx="250" cy="150" r="75" fill="url(#atmosphere)" stroke="#0284c7" strokeWidth="1.5" />
+          {/* Earth Body Arc */}
+          <circle cx="250" cy="220" r="140" fill="url(#earthGlow)" />
+          <circle cx="250" cy="220" r="140" stroke="#1E2E52" strokeWidth="1.5" fill="none" />
 
-            {/* Stylized Longitude/Latitude lines */}
-            <ellipse cx="250" cy="150" rx="75" ry="35" fill="none" stroke="#0ea5e9" strokeWidth="0.75" strokeDasharray="2 2" opacity="0.4" />
-            <ellipse cx="250" cy="150" rx="35" ry="75" fill="none" stroke="#0ea5e9" strokeWidth="0.75" strokeDasharray="2 2" opacity="0.4" />
-            <line x1="175" y1="150" x2="325" y2="150" stroke="#0ea5e9" strokeWidth="0.75" opacity="0.3" />
+          {/* Ground Station Antenna Location */}
+          <circle cx="250" cy="80" r="3.5" fill="#10b981" />
+          <circle cx="250" cy="80" r="10" stroke="#10b981" strokeWidth="1" strokeDasharray="2 2" fill="none" opacity="0.6" />
+          <text x="250" y="70" fill="#10b981" fontSize="9" fontWeight="bold" textAnchor="middle" fontFamily="sans-serif">
+            GS (LEO-1)
+          </text>
 
-            {/* Earth Center Core Label */}
-            <text x="250" y="175" textAnchor="middle" fill="#64748b" fontSize="9" fontFamily="JetBrains Mono" letterSpacing="2">
-              TERRA (LEO)
-            </text>
-          </g>
-
-          {/* Orbital Plane Ellipse */}
-          <ellipse
-            cx={cx}
-            cy={cy}
-            rx={rx}
-            ry={ry}
-            fill="none"
-            stroke="#0ea5e9"
-            strokeWidth="1.5"
-            strokeDasharray="4 4"
-            opacity="0.6"
-          />
-
-          {/* Contact Pass Arc Highlight (active contact sector) */}
-          <path
-            d={`M ${cx + rx * Math.cos(startAngle)} ${cy + ry * Math.sin(startAngle)} A ${rx} ${ry} 0 0 1 ${cx + rx * Math.cos(endAngle)} ${cy + ry * Math.sin(endAngle)}`}
-            fill="none"
-            stroke="#06b6d4"
-            strokeWidth="3"
-            strokeLinecap="round"
-            className="shadow-md"
-          />
-
-          {/* Contact Cone Beam (from Satellite to Ground Station) */}
-          {isActive && (
-            <g>
-              <polygon
-                points={`${satX},${satY} ${gsX - 25},${gsY + 10} ${gsX + 25},${gsY + 10}`}
-                fill="url(#beamGradient)"
-              />
-              <line
-                x1={satX}
-                y1={satY}
-                x2={gsX}
-                y2={gsY}
-                stroke="#22d3ee"
-                strokeWidth="1.5"
-                strokeDasharray="2 2"
-                className="animate-pulse"
-              />
-            </g>
+          {/* Ground Station Tracking Cone (when in contact) */}
+          {inContact && (
+            <polygon
+              points={`250,80 ${satX - 25},${satY} ${satX + 25},${satY}`}
+              fill="url(#groundCone)"
+            />
           )}
 
-          {/* Ground Station Terminal Pin */}
-          <g transform={`translate(${gsX}, ${gsY})`}>
-            <circle cx="0" cy="0" r="4" fill="#10b981" />
-            <circle cx="0" cy="0" r="10" fill="none" stroke="#10b981" strokeWidth="1" opacity="0.6" className="animate-ping" />
-            <text x="0" y="-12" textAnchor="middle" fill="#10b981" fontSize="9" fontWeight="bold" fontFamily="JetBrains Mono">
-              GS-PRIMARY (13°N)
-            </text>
-          </g>
+          {/* Satellite Orbit Ground Track Path */}
+          <path
+            d="M 60 180 Q 250 30 440 180"
+            stroke="#0ea5e9"
+            strokeWidth="1.5"
+            strokeDasharray={inContact ? 'none' : '4 4'}
+            fill="none"
+            opacity="0.8"
+          />
 
-          {/* Satellite Node & Marker */}
+          {/* Satellite Icon & Marker */}
           <g transform={`translate(${satX}, ${satY})`}>
-            {/* Pulsing Aura */}
-            <circle cx="0" cy="0" r="14" fill="#06b6d4" opacity="0.2" className="animate-pulse" />
-            <circle cx="0" cy="0" r="6" fill="#06b6d4" stroke="#ffffff" strokeWidth="1.5" />
+            {/* Pulsing ring if in contact */}
+            {inContact && (
+              <circle cx="0" cy="0" r="12" stroke="#38bdf8" strokeWidth="1" fill="none" opacity="0.7">
+                <animate attributeName="r" values="6;16" dur="1.5s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.8;0" dur="1.5s" repeatCount="indefinite" />
+              </circle>
+            )}
+            <circle cx="0" cy="0" r="5" fill="#0ea5e9" stroke="#fff" strokeWidth="1.5" />
+            <rect x="-8" y="-1.5" width="4" height="3" fill="#38bdf8" />
+            <rect x="4" y="-1.5" width="4" height="3" fill="#38bdf8" />
 
-            {/* Satellite Solar Panels */}
-            <rect x="-14" y="-3" width="6" height="6" fill="#0284c7" stroke="#38bdf8" strokeWidth="0.5" rx="1" />
-            <rect x="8" y="-3" width="6" height="6" fill="#0284c7" stroke="#38bdf8" strokeWidth="0.5" rx="1" />
-
-            {/* Satellite Label */}
-            <text x="0" y="-16" textAnchor="middle" fill="#22d3ee" fontSize="10" fontWeight="bold" fontFamily="JetBrains Mono">
-              {activeRev?.mission_id ?? 'NO ACTIVE PASS'}
-            </text>
-            <text x="0" y="20" textAnchor="middle" fill="#94a3b8" fontSize="8" fontFamily="JetBrains Mono">
-              {isActive ? 'IN CONTACT' : 'ORBITING'}
-            </text>
-          </g>
-
-          {/* AOS / LOS Marker labels on the orbit */}
-          <g transform={`translate(${cx + rx * Math.cos(startAngle)}, ${cy + ry * Math.sin(startAngle)})`}>
-            <circle cx="0" cy="0" r="2.5" fill="#38bdf8" />
-            <text x="-10" y="15" textAnchor="middle" fill="#64748b" fontSize="8" fontFamily="JetBrains Mono">
-              AOS
-            </text>
-          </g>
-
-          <g transform={`translate(${cx + rx * Math.cos(endAngle)}, ${cy + ry * Math.sin(endAngle)})`}>
-            <circle cx="0" cy="0" r="2.5" fill="#38bdf8" />
-            <text x="10" y="15" textAnchor="middle" fill="#64748b" fontSize="8" fontFamily="JetBrains Mono">
-              LOS
+            <text x="0" y="-10" fill="#38bdf8" fontSize="9" fontWeight="bold" textAnchor="middle" fontFamily="Cascadia Mono, Consolas, monospace">
+              NEURONEX-1
             </text>
           </g>
         </svg>
-      </div>
 
-      {/* Orbit Geometry Telemetry Strip */}
-      <div className="pt-2 border-t border-slate-800/80 grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs text-slate-300">
-        <div className="bg-slate-950/60 p-2 rounded-lg border border-slate-800">
-          <span className="text-[9px] text-slate-500 block">ORBIT PERIOD</span>
-          <strong className="text-cyan-300 font-bold">—</strong>
+        {/* Inset Coordinate Readout */}
+        <div className="absolute bottom-2 left-2.5 flex items-center gap-2 text-[9px] bg-[#050810]/90 px-2 py-1 rounded border border-[#131E35] font-mono">
+          <Compass className="w-3 h-3 text-cyan-400" />
+          <span className="text-slate-400">LAT: <strong className="text-slate-200 tabular-nums">13.08° N</strong></span>
+          <span className="text-slate-400">LON: <strong className="text-slate-200 tabular-nums">80.27° E</strong></span>
+          <span className="text-slate-400">ALT: <strong className="text-cyan-300 tabular-nums">550.2 km</strong></span>
         </div>
-        <div className="bg-slate-950/60 p-2 rounded-lg border border-slate-800">
-          <span className="text-[9px] text-slate-500 block">DAILY PASSES</span>
-          <strong className="text-slate-200 font-bold">—</strong>
-        </div>
-        <div className="bg-slate-950/60 p-2 rounded-lg border border-slate-800">
-          <span className="text-[9px] text-slate-500 block">VELOCITY</span>
-          <strong className="text-teal-300 font-bold">—</strong>
-        </div>
-        <div className="bg-slate-950/60 p-2 rounded-lg border border-slate-800">
-          <span className="text-[9px] text-slate-500 block">PASS DURATION</span>
-          <strong className="text-emerald-300 font-bold">{activeRev ? `${activeRev.window_duration_sec} sec` : '—'}</strong>
+
+        {/* Live Tracking Status */}
+        <div className="absolute top-2 right-2.5 flex items-center gap-1.5 text-[9px] bg-[#050810]/90 px-2 py-1 rounded border border-[#131E35]">
+          <Radio className="w-3 h-3 text-emerald-400" />
+          <span className="text-slate-300 font-semibold uppercase">
+            {inContact ? 'Antenna Az/El Locked' : 'Searching Horizon'}
+          </span>
         </div>
       </div>
     </div>

@@ -1,93 +1,65 @@
 import type { Image } from '../../types';
+import { Zap, Clock, HardDrive } from 'lucide-react';
 import { formatBps } from '../../utils/format';
 
 interface TransmissionProgressCardProps {
-  image: Image | null;
-  missingCount?: number;
+  activeImage: Image | null;
 }
 
-export function TransmissionProgressCard({
-  image,
-  missingCount = 0,
-}: TransmissionProgressCardProps) {
-  if (!image) {
-    return <div className="bg-[#0B132B]/80 rounded-xl border border-cyan-900/30 p-8 text-center text-xs font-mono text-slate-500">NO ACTIVE DOWNLINK</div>;
-  }
-  const progress = image.progress_percent;
-  const segmentsConfirmed = image.segments_confirmed;
-  const totalSegments = image.total_segments ?? 0;
-  const throughput = formatBps(image.throughput_bps);
-  const latency = image.latency_ms_tx ?? image.latency_ms;
+export function TransmissionProgressCard({ activeImage }: TransmissionProgressCardProps) {
+  const totalSegs = activeImage?.total_segments ?? 40;
+  const confirmedSegs = activeImage?.segments_confirmed ?? 0;
+  const progressPercent = totalSegs > 0 ? Math.round((confirmedSegs / totalSegs) * 100) : 0;
 
-  // Compute realistic ETA in HH:MM:SS based on remaining segments
-  const remainingSegments = Math.max(0, totalSegments - segmentsConfirmed);
-  const throughputBps = image.throughput_bps;
-  const avgChunkSizeBytes = image.chunk_size;
-  const remainingBytes = avgChunkSizeBytes === null ? null : remainingSegments * avgChunkSizeBytes;
-  const etaSec = throughputBps !== null && throughputBps > 0 && remainingBytes !== null ? Math.ceil(remainingBytes / (throughputBps / 8)) : null;
-
-  const etaFormatted = etaSec === null ? '—' : `${String(Math.floor(etaSec / 3600)).padStart(2, '0')}:${String(Math.floor((etaSec % 3600) / 60)).padStart(2, '0')}:${String(etaSec % 60).padStart(2, '0')}`;
+  // Rate & elapsed
+  const throughput = activeImage?.throughput_bps ? formatBps(activeImage.throughput_bps) : '—';
+  const remainingSegs = Math.max(0, totalSegs - confirmedSegs);
+  const estSecondsRemaining = remainingSegs * 1.5;
 
   return (
-    <div className="bg-[#0B132B]/80 backdrop-blur-md rounded-xl border border-cyan-900/30 p-5 flex flex-col justify-between hover:border-cyan-500/40 transition-colors shadow-lg shadow-black/40">
-      {/* Header with Title and Big % */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
-          Transmission Progress
+    <div className="bg-[#080E1E] rounded-md border border-[#131E35] p-3.5 space-y-2.5">
+      <div className="flex items-center justify-between pb-1.5 border-b border-[#131E35]">
+        <div className="text-[10px] font-semibold tracking-wide text-slate-400 uppercase flex items-center gap-1.5">
+          <Zap className="w-3 h-3 text-amber-400" />
+          <span>Frame Ingest Progress</span>
         </div>
-        <div className="text-xl font-bold font-mono text-cyan-400">
-          {progress}%
-        </div>
+        <span className="text-xs font-bold font-mono tabular-nums text-cyan-300">
+          {progressPercent}%
+        </span>
       </div>
 
-      {/* Progress Bar and Segment Status */}
-      <div className="space-y-1.5 mb-4">
-        <div className="flex items-center justify-between text-xs font-mono text-slate-300">
-          <span className="font-semibold">Segment {segmentsConfirmed} / {totalSegments}</span>
-        </div>
-        <div className="h-3 bg-slate-900/90 rounded-full overflow-hidden border border-slate-700/50 p-0.5 shadow-inner">
+      {/* Progress Track */}
+      <div className="space-y-1">
+        <div className="w-full h-2 bg-[#050810] rounded-none overflow-hidden border border-[#131E35]">
           <div
-            className="h-full bg-gradient-to-r from-teal-500 via-cyan-400 to-blue-500 rounded-full transition-all duration-300 shadow-md shadow-cyan-400/50"
-            style={{ width: `${Math.max(3, progress)}%` }}
+            className="h-full bg-cyan-400 transition-all duration-300"
+            style={{ width: `${progressPercent}%` }}
           />
         </div>
+        <div className="flex items-center justify-between text-[10px] text-slate-400">
+          <span>{confirmedSegs} of {totalSegs} chunks received</span>
+          <span className="font-mono text-slate-300 tabular-nums">{remainingSegs} remaining</span>
+        </div>
       </div>
 
-      {/* Segment Breakdown & RF Link Metric Rows */}
-      <div className="grid grid-cols-3 gap-3 pt-3 border-t border-slate-800/80 text-xs font-mono">
-        <div>
-          <div className="text-[10px] uppercase text-slate-400 font-semibold">Received</div>
-          <div className="text-sm font-bold text-white mt-0.5">{segmentsConfirmed}</div>
-        </div>
-        <div>
-          <div className="text-[10px] uppercase text-slate-400 font-semibold"># Missing</div>
-          <div className="text-sm font-bold text-rose-400 mt-0.5 flex items-center gap-1.5">
-            <span>{missingCount}</span>
-            {missingCount > 0 && (
-              <span className="text-[9px] px-1 py-0.2 rounded bg-rose-500/20 text-rose-400 border border-rose-500/30">
-                LOST
-              </span>
-            )}
+      {/* 2-Column Telemetry Sub-stats */}
+      <div className="grid grid-cols-2 gap-2 pt-1 border-t border-[#131E35] text-xs">
+        <div className="flex items-center gap-2 p-1.5 rounded bg-[#050810] border border-[#131E35]">
+          <HardDrive className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+          <div>
+            <div className="text-[9px] text-slate-500 uppercase">Throughput</div>
+            <div className="font-mono font-bold text-white text-[11px] tabular-nums">{throughput}</div>
           </div>
         </div>
-        <div>
-          <div className="text-[10px] uppercase text-slate-400 font-semibold">Total</div>
-          <div className="text-sm font-bold text-white mt-0.5">{totalSegments}</div>
-        </div>
-      </div>
 
-      <div className="grid grid-cols-3 gap-3 pt-3 mt-3 border-t border-slate-800/60 text-xs font-mono">
-        <div>
-          <div className="text-[10px] uppercase text-slate-400 font-semibold">Throughput</div>
-          <div className="text-sm font-bold text-slate-200 mt-0.5">{throughput}</div>
-        </div>
-        <div>
-          <div className="text-[10px] uppercase text-slate-400 font-semibold">Latency</div>
-          <div className="text-sm font-bold text-slate-200 mt-0.5">{latency === null ? '—' : `${latency} ms`}</div>
-        </div>
-        <div>
-          <div className="text-[10px] uppercase text-slate-400 font-semibold">ETA</div>
-          <div className="text-sm font-bold text-cyan-300 mt-0.5">{etaFormatted}</div>
+        <div className="flex items-center gap-2 p-1.5 rounded bg-[#050810] border border-[#131E35]">
+          <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+          <div>
+            <div className="text-[9px] text-slate-500 uppercase">Est. Completion</div>
+            <div className="font-mono font-bold text-amber-300 text-[11px] tabular-nums">
+              {confirmedSegs === totalSegs ? 'Complete' : `${estSecondsRemaining.toFixed(0)}s`}
+            </div>
+          </div>
         </div>
       </div>
     </div>

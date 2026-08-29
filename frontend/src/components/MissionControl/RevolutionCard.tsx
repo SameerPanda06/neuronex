@@ -1,73 +1,90 @@
-import { useRevolutionStatus } from '../../hooks/useRevolutions';
+import type { Revolution } from '../../types';
+import { ArrowUpRight, Clock } from 'lucide-react';
 
-export function RevolutionCard() {
-  const { status: revStatus } = useRevolutionStatus();
+interface RevolutionCardProps {
+  revolution: Revolution | null;
+  inContact: boolean;
+  timeRemaining?: number | null;
+  onNavigate?: () => void;
+}
 
-  const revNum = revStatus?.revolution?.revolution_num ?? null;
-  const timeRemaining = revStatus?.time_remaining ?? null;
-  const totalWindow = revStatus?.revolution?.window_duration_sec ?? null;
-  const pct = totalWindow !== null && totalWindow > 0 && timeRemaining !== null ? Math.max(0, Math.min(100, ((totalWindow - timeRemaining) / totalWindow) * 100)) : 0;
-
-  const timeFormatted = timeRemaining === null ? '—' : `${String(Math.floor(timeRemaining / 60)).padStart(2, '0')}:${String(timeRemaining % 60).padStart(2, '0')}`;
-
-  const windowStart = revStatus?.revolution?.window_start
-    ? new Date(revStatus.revolution.window_start).toLocaleTimeString('en-GB', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
-    : '—';
-  const windowEnd = revStatus?.revolution?.window_end
-    ? new Date(revStatus.revolution.window_end).toLocaleTimeString('en-GB', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
-    : '—';
-
-  // SVG Circular Gauge calculations
-  const radius = 38;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (pct / 100) * circumference;
+export function RevolutionCard({
+  revolution,
+  inContact,
+  timeRemaining = null,
+  onNavigate,
+}: RevolutionCardProps) {
+  const revNum = revolution?.revolution_num ?? null;
+  const mins = String(Math.floor((timeRemaining ?? 0) / 60)).padStart(2, '0');
+  const secs = String((timeRemaining ?? 0) % 60).padStart(2, '0');
+  const countdown = timeRemaining === null ? '—' : `${mins}:${secs}`;
 
   return (
-    <div className="bg-[#0B132B]/80 backdrop-blur-md rounded-xl border border-cyan-900/30 p-5 flex flex-col justify-between hover:border-cyan-500/40 transition-colors shadow-lg shadow-black/40 h-full min-h-[220px]">
-      <div className="text-[11px] font-semibold tracking-wider text-slate-400 uppercase mb-1">
-        {revNum === null ? 'Revolution —' : `Revolution #${revNum}`}
-      </div>
+    <div className="bg-[#080E1E] rounded-md border border-[#131E35] p-4 flex flex-col justify-between h-full">
+      <div>
+        {/* Header */}
+        <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#131E35]">
+          <div className="flex items-center gap-2">
+            <Clock className="w-3.5 h-3.5 text-cyan-400" />
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-white">
+              Orbital Contact Window
+            </h3>
+          </div>
 
-      <div className="flex flex-col items-center justify-center my-auto py-1">
-        <div className="relative w-28 h-28 flex items-center justify-center">
-          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-            {/* Background circle */}
-            <circle
-              cx="50"
-              cy="50"
-              r={radius}
-              stroke="#1e293b"
-              strokeWidth="6"
-              fill="transparent"
-            />
-            {/* Progress arc */}
-            <circle
-              cx="50"
-              cy="50"
-              r={radius}
-              stroke="#22c55e"
-              strokeWidth="6"
-              strokeDasharray={circumference}
-              strokeDashoffset={strokeDashoffset}
-              strokeLinecap="round"
-              fill="transparent"
-              className="transition-all duration-500"
-            />
-          </svg>
-          {/* Inner text */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-            <span className="text-xl font-bold font-mono text-white tracking-tight">
-              {timeFormatted}
+          <div className="flex items-center gap-2">
+            <span
+              className={`px-1.5 py-0.2 rounded text-[9px] font-semibold uppercase tracking-wider ${
+                inContact
+                  ? 'bg-[#062D24] text-emerald-400 border border-emerald-500/30'
+                  : 'bg-slate-800 text-slate-400'
+              }`}
+            >
+              {inContact ? 'In Contact' : 'Standby'}
             </span>
-            <span className="text-[10px] font-medium text-slate-400">
-              Remaining
-            </span>
+
+            {onNavigate && (
+              <button
+                type="button"
+                onClick={onNavigate}
+                className="text-slate-400 hover:text-cyan-300 transition-colors p-0.5"
+                title="View full Orbit Windows"
+                aria-label="View full Orbit Windows"
+              >
+                <ArrowUpRight className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Content Body */}
+        <div className="flex items-center justify-between py-2">
+          <div>
+            <div className="text-[9px] uppercase tracking-wide text-slate-500">Active Pass</div>
+            <div className="text-xl font-bold font-mono text-white">
+              {revNum === null ? 'Rev —' : `Rev #${revNum}`}
+            </div>
+            <div className="text-[10px] text-slate-400 mt-0.5">
+              LEO 550 km Polar Orbit
+            </div>
+          </div>
+
+          {/* Circular Countdown Tracker */}
+          <div className="text-right">
+            <div className="text-[9px] uppercase tracking-wide text-slate-500">Remaining</div>
+            <div className="text-xl font-bold font-mono tabular-nums text-cyan-300">
+              {inContact ? countdown : 'Standby'}
+            </div>
+            <div className="text-[10px] text-slate-400 mt-0.5">
+              60-second window
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="text-center text-[10px] font-mono text-slate-400 border-t border-slate-800/60 pt-2">
-        Window: {windowStart} - {windowEnd} UTC
+      {/* Footer */}
+      <div className="pt-2 mt-2 border-t border-[#131E35] flex items-center justify-between text-[11px]">
+        <span className="text-slate-400">Ground Station Tracking</span>
+        <span className="text-cyan-300 font-mono">13.08°N AOS</span>
       </div>
     </div>
   );

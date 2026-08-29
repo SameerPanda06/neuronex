@@ -1,94 +1,139 @@
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { useImagesStats } from '../../hooks/useImages';
+import { ArrowUpRight, Zap } from 'lucide-react';
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
 
-const COLORS = {
-  CLEAR: '#06b6d4',      // Cyan (Clear - Kept)
-  CLOUDY: '#3b82f6',     // Blue (Cloudy - Kept)
-  NOT_VISIBLE: '#334155' // Dark Slate (Not Visible - Discarded)
-};
+interface AiOptimizationCardProps {
+  onNavigate?: () => void;
+}
 
-export function AiOptimizationCard() {
+export function AiOptimizationCard({ onNavigate }: AiOptimizationCardProps) {
   const { stats } = useImagesStats();
 
   const clearCount = stats?.by_classification?.CLEAR ?? 0;
   const cloudyCount = stats?.by_classification?.CLOUDY ?? 0;
   const notVisibleCount = stats?.by_classification?.NOT_VISIBLE ?? 0;
+  const totalCount = stats?.total ?? 0;
   const discardCount = stats?.by_action?.discard ?? 0;
 
-  const total = clearCount + cloudyCount + notVisibleCount;
-  const clearPct = total > 0 ? Math.round((clearCount / total) * 100) : 0;
-  const cloudyPct = total > 0 ? Math.round((cloudyCount / total) * 100) : 0;
-  const notVisiblePct = total > 0 ? Math.round((notVisibleCount / total) * 100) : 0;
-  const discardRate = total > 0 ? Math.round((discardCount / total) * 100) : null;
+  // Calculate percentage of bandwidth saved
+  const dataAvoidedPct = totalCount > 0 ? Math.round((discardCount / totalCount) * 100) : 0;
 
-  const data = [
-    { name: 'Clear', value: clearCount, color: COLORS.CLEAR },
-    { name: 'Cloudy', value: cloudyCount, color: COLORS.CLOUDY },
-    { name: 'Not Visible', value: notVisibleCount, color: COLORS.NOT_VISIBLE },
-  ];
+  // Data for Donut Chart
+  const pieData = [
+    { name: 'Clear (P1)', value: clearCount, color: '#10b981' },
+    { name: 'Cloudy (P2)', value: cloudyCount, color: '#38bdf8' },
+    { name: 'Discarded', value: notVisibleCount, color: '#475569' },
+  ].filter((d) => d.value > 0);
 
   return (
-    <div className="bg-[#0B132B]/80 backdrop-blur-md rounded-xl border border-cyan-900/30 p-5 flex flex-col justify-between hover:border-cyan-500/40 transition-colors shadow-lg shadow-black/40 h-full">
-      <div className="text-[11px] font-semibold tracking-wider text-slate-400 uppercase mb-2">
-        AI Downlink Optimization
+    <div className="bg-[#080E1E] rounded-md border border-[#131E35] p-4 flex flex-col justify-between h-full">
+      <div>
+        {/* Header */}
+        <div className="flex items-center justify-between pb-2 mb-3 border-b border-[#131E35]">
+          <div className="flex items-center gap-2">
+            <Zap className="w-3.5 h-3.5 text-cyan-400" />
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-white">
+              Edge-AI Inference Optimization
+            </h3>
+          </div>
+
+          {onNavigate && (
+            <button
+              type="button"
+              onClick={onNavigate}
+              className="text-slate-400 hover:text-cyan-300 transition-colors p-0.5"
+              title="View full AI Gallery"
+              aria-label="View full AI Gallery"
+            >
+              <ArrowUpRight className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+
+        {/* Content Body */}
+        <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+          {/* Donut Chart Canvas */}
+          <div className="sm:col-span-5 relative h-28 flex items-center justify-center">
+            {pieData.length === 0 ? (
+              <div className="text-[10px] text-slate-500 font-mono">No data</div>
+            ) : (
+              <>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#070D1A',
+                        borderColor: '#1E2E52',
+                        borderRadius: '0.25rem',
+                        fontSize: '11px',
+                        color: '#fff',
+                      }}
+                    />
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={30}
+                      outerRadius={45}
+                      paddingAngle={3}
+                      dataKey="value"
+                      stroke="#080E1E"
+                      strokeWidth={1.5}
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+                {/* Center callout */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="text-xs font-bold font-mono tabular-nums text-white">
+                    {dataAvoidedPct}%
+                  </span>
+                  <span className="text-[8px] uppercase tracking-wider text-slate-400">
+                    Saved
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Breakdown Rows */}
+          <div className="sm:col-span-7 space-y-1.5 text-xs">
+            <div className="flex items-center justify-between p-1.5 rounded bg-[#050810] border border-[#131E35]">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-none bg-emerald-400" />
+                <span className="text-slate-300 text-[11px]">Clear (P1 Kept)</span>
+              </div>
+              <span className="font-semibold font-mono tabular-nums text-white text-[11px]">{clearCount}</span>
+            </div>
+
+            <div className="flex items-center justify-between p-1.5 rounded bg-[#050810] border border-[#131E35]">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-none bg-cyan-400" />
+                <span className="text-slate-300 text-[11px]">Cloudy (P2 Kept)</span>
+              </div>
+              <span className="font-semibold font-mono tabular-nums text-white text-[11px]">{cloudyCount}</span>
+            </div>
+
+            <div className="flex items-center justify-between p-1.5 rounded bg-[#050810] border border-[#131E35]">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-none bg-slate-500" />
+                <span className="text-slate-400 text-[11px]">Discarded</span>
+              </div>
+              <span className="font-semibold font-mono tabular-nums text-slate-400 text-[11px]">{notVisibleCount}</span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center flex-1">
-        {/* Donut Chart with Data Avoided */}
-        <div className="sm:col-span-5 flex flex-col items-center justify-center relative min-h-[140px]">
-          <div className="w-full h-32 relative">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={data}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={36}
-                  outerRadius={52}
-                  paddingAngle={3}
-                  dataKey="value"
-                  stroke="#0B132B"
-                  strokeWidth={2}
-                >
-                  {data.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="text-center mt-1">
-            <div className="text-[11px] font-medium text-slate-400">Discard Rate</div>
-            <div className="text-sm font-bold font-mono text-emerald-400">{discardRate === null ? '—' : `${discardRate}%`}</div>
-          </div>
-        </div>
-
-        {/* Legend / Breakdown */}
-        <div className="sm:col-span-7 space-y-2 text-xs font-mono">
-          <div className="flex items-center justify-between p-1.5 rounded-lg bg-slate-900/40 border border-slate-800/40">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-sm shadow-cyan-400/50" />
-              <span className="text-slate-300 font-sans text-xs">Clear</span>
-            </div>
-            <span className="text-slate-200 font-semibold">{clearCount} ({clearPct}%)</span>
-          </div>
-
-          <div className="flex items-center justify-between p-1.5 rounded-lg bg-slate-900/40 border border-slate-800/40">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50" />
-              <span className="text-slate-300 font-sans text-xs">Cloudy</span>
-            </div>
-            <span className="text-slate-200 font-semibold">{cloudyCount} ({cloudyPct}%)</span>
-          </div>
-
-          <div className="flex items-center justify-between p-1.5 rounded-lg bg-slate-900/40 border border-slate-800/40">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-slate-500" />
-              <span className="text-slate-400 font-sans text-xs">Not Visible</span>
-            </div>
-            <span className="text-slate-400 font-semibold">{notVisibleCount} ({notVisiblePct}%)</span>
-          </div>
-        </div>
+      {/* Footer */}
+      <div className="pt-2 mt-2 border-t border-[#131E35] flex items-center justify-between text-[11px]">
+        <span className="text-slate-400">MobileNetV2 Edge Classifier</span>
+        <span className="text-cyan-300 font-mono tabular-nums">
+          {totalCount} Total Ingested
+        </span>
       </div>
     </div>
   );

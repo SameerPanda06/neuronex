@@ -17,8 +17,8 @@ export function TimeRangeSelector({ selected, onChange }: TimeRangeSelectorProps
   ];
 
   return (
-    <div className="flex items-center gap-1.5 p-1 bg-[#070D1C] rounded-lg border border-slate-800/90 shadow-inner">
-      <span className="text-[10px] font-mono text-slate-500 uppercase px-2 font-semibold">RANGE:</span>
+    <div className="flex items-center gap-1 p-1 bg-[#080E1E] rounded-md border border-[#131E35]">
+      <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide px-2">Range:</span>
       {ranges.map((r) => {
         const isActive = selected === r.id;
         return (
@@ -26,10 +26,10 @@ export function TimeRangeSelector({ selected, onChange }: TimeRangeSelectorProps
             key={r.id}
             onClick={() => onChange(r.id)}
             className={cn(
-              'px-2.5 py-1 rounded-md text-xs font-mono transition-all duration-150 relative',
+              'px-2.5 py-0.5 rounded text-xs transition-colors relative font-medium',
               isActive
-                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm shadow-cyan-950 font-bold'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 border border-transparent'
+                ? 'bg-[#0E1B38] text-cyan-300 border border-cyan-500/40 font-semibold'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-[#050810] border border-transparent'
             )}
           >
             {r.id === 'LIVE' && (

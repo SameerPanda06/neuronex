@@ -6,7 +6,7 @@ import { FilterBar, type ClassificationFilter, type SortOption } from './FilterB
 import { ImageCard } from './ImageCard';
 import { ImageDetailModal } from './ImageDetailModal';
 import type { Image } from '../../types';
-import { Filter, Layers, Database, Sparkles, Zap } from 'lucide-react';
+import { Filter, Layers, Database, Sun, Cloud, EyeOff, Zap } from 'lucide-react';
 
 interface AiGalleryProps {
   onNavigateTab?: (tab: string) => void;
@@ -77,76 +77,83 @@ export function AiGallery({ onNavigateTab }: AiGalleryProps) {
   const revNum = revStatus?.revolution?.revolution_num ?? null;
 
   return (
-    <div className="space-y-5 pb-8">
-      {/* Top Header matching reference */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-2 border-b border-slate-800/60">
+    <div className="space-y-4 pb-6">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-[#131E35]">
         <div>
-          <h1 className="text-2xl font-bold font-space text-white tracking-wide flex items-center gap-2.5">
-            <Layers className="w-6 h-6 text-cyan-400" />
-            <span>AI IMAGE GALLERY</span>
-          </h1>
-          <p className="text-xs font-mono text-cyan-400/90 mt-0.5">
-            Edge-AI classified Earth observation frames
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+              <Layers className="w-5 h-5 text-cyan-400" />
+              <span>AI Image Repository</span>
+            </h1>
+            <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-[#0D1830] text-cyan-400 border border-cyan-500/30">
+              Edge Inference
+            </span>
+          </div>
+          <p className="text-xs text-slate-400 font-normal mt-0.5">
+            Onboard MobileNetV2 classified Earth observation payload frames
           </p>
         </div>
 
-        <div className="flex items-center gap-4 flex-wrap text-xs font-mono">
+        <div className="flex items-center gap-3 flex-wrap text-xs">
           {/* Status Badge */}
-          <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-semibold shadow-sm shadow-emerald-950">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>{isMock ? 'SIMULATION' : isReplay ? 'MISSION REPLAY' : connected ? 'LIVE HARDWARE' : 'OFFLINE'}</span>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#070D1A] border border-[#1E2E52] text-[11px]">
+            <span className={`w-1.5 h-1.5 rounded-full ${isMock ? 'bg-cyan-400' : isReplay ? 'bg-amber-400' : connected ? 'bg-emerald-400' : 'bg-rose-500'}`} />
+            <span className="text-slate-300 font-semibold uppercase tracking-wider">
+              {isMock ? 'Simulation' : isReplay ? 'Mission Replay' : connected ? 'Live Hardware' : 'Offline'}
+            </span>
           </div>
 
-          <div className="text-slate-300 font-medium hidden md:block">
-            {revNum === null ? 'Revolution —' : `Revolution #${revNum}`}
+          <div className="text-slate-400 text-xs hidden md:block px-2.5 py-1 bg-[#070D1A] border border-[#131E35] rounded font-mono tabular-nums">
+            {revNum === null ? 'Rev —' : `Rev #${revNum}`}
           </div>
 
-          <div className="text-cyan-300 font-bold bg-slate-900/60 px-2.5 py-1 rounded border border-slate-800">
+          <div className="text-cyan-300 font-semibold bg-[#070D1A] px-2.5 py-1 rounded border border-[#131E35] font-mono tabular-nums">
             {utcTime || '--:--:-- UTC'}
           </div>
         </div>
       </div>
 
       {/* Summary KPI Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        <div className="p-3 rounded-xl bg-[#0B132B]/80 border border-cyan-900/30 flex flex-col justify-between">
-          <div className="text-[10px] uppercase font-semibold text-slate-400 flex items-center gap-1">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+        <div className="p-3 rounded-md bg-[#080E1E] border border-[#131E35] flex flex-col justify-between">
+          <div className="text-[9px] uppercase tracking-wide font-semibold text-slate-400 flex items-center gap-1">
             <Database className="w-3 h-3 text-cyan-400" />
-            <span>Total Captured</span>
+            <span>Total Frames</span>
           </div>
-          <div className="text-xl font-bold font-space text-white mt-1">{totalCount}</div>
+          <div className="text-lg font-bold font-mono tabular-nums text-white mt-1">{totalCount}</div>
         </div>
 
-        <div className="p-3 rounded-xl bg-[#0B132B]/80 border border-cyan-900/30 flex flex-col justify-between">
-          <div className="text-[10px] uppercase font-semibold text-slate-400 flex items-center gap-1">
-            <Sparkles className="w-3 h-3 text-emerald-400" />
-            <span>Clear</span>
+        <div className="p-3 rounded-md bg-[#080E1E] border border-[#131E35] flex flex-col justify-between">
+          <div className="text-[9px] uppercase tracking-wide font-semibold text-slate-400 flex items-center gap-1">
+            <Sun className="w-3 h-3 text-emerald-400" />
+            <span>Clear (P1 Kept)</span>
           </div>
-          <div className="text-xl font-bold font-space text-emerald-400 mt-1">{clearCount}</div>
+          <div className="text-lg font-bold font-mono tabular-nums text-emerald-400 mt-1">{clearCount}</div>
         </div>
 
-        <div className="p-3 rounded-xl bg-[#0B132B]/80 border border-cyan-900/30 flex flex-col justify-between">
-          <div className="text-[10px] uppercase font-semibold text-slate-400 flex items-center gap-1">
-            <Sparkles className="w-3 h-3 text-blue-400" />
-            <span>Cloudy</span>
+        <div className="p-3 rounded-md bg-[#080E1E] border border-[#131E35] flex flex-col justify-between">
+          <div className="text-[9px] uppercase tracking-wide font-semibold text-slate-400 flex items-center gap-1">
+            <Cloud className="w-3 h-3 text-blue-400" />
+            <span>Cloudy (P2 Kept)</span>
           </div>
-          <div className="text-xl font-bold font-space text-blue-400 mt-1">{cloudyCount}</div>
+          <div className="text-lg font-bold font-mono tabular-nums text-blue-400 mt-1">{cloudyCount}</div>
         </div>
 
-        <div className="p-3 rounded-xl bg-[#0B132B]/80 border border-cyan-900/30 flex flex-col justify-between">
-          <div className="text-[10px] uppercase font-semibold text-slate-400 flex items-center gap-1">
-            <Sparkles className="w-3 h-3 text-rose-400" />
-            <span>Not Visible</span>
+        <div className="p-3 rounded-md bg-[#080E1E] border border-[#131E35] flex flex-col justify-between">
+          <div className="text-[9px] uppercase tracking-wide font-semibold text-slate-400 flex items-center gap-1">
+            <EyeOff className="w-3 h-3 text-slate-400" />
+            <span>Not Visible (Discard)</span>
           </div>
-          <div className="text-xl font-bold font-space text-rose-400 mt-1">{notVisibleCount}</div>
+          <div className="text-lg font-bold font-mono tabular-nums text-slate-300 mt-1">{notVisibleCount}</div>
         </div>
 
-        <div className="p-3 rounded-xl bg-[#0B132B]/80 border border-cyan-900/30 flex flex-col justify-between col-span-2 sm:col-span-1">
-          <div className="text-[10px] uppercase font-semibold text-slate-400 flex items-center gap-1">
+        <div className="p-3 rounded-md bg-[#080E1E] border border-[#131E35] flex flex-col justify-between col-span-2 sm:col-span-1">
+          <div className="text-[9px] uppercase tracking-wide font-semibold text-slate-400 flex items-center gap-1">
             <Zap className="w-3 h-3 text-cyan-400" />
-            <span>Discard Rate</span>
+            <span>Bandwidth Saved</span>
           </div>
-          <div className="text-xl font-bold font-space text-emerald-400 mt-1">{dataAvoidedPct === null ? '—' : `${dataAvoidedPct}%`}</div>
+          <div className="text-lg font-bold font-mono tabular-nums text-cyan-300 mt-1">{dataAvoidedPct === null ? '—' : `${dataAvoidedPct}%`}</div>
         </div>
       </div>
 
@@ -165,27 +172,27 @@ export function AiGallery({ onNavigateTab }: AiGalleryProps) {
 
       {/* Image Gallery Grid / List */}
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 pt-1">
           {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
             <div
               key={i}
-              className="animate-pulse bg-[#0B132B]/60 rounded-xl border border-slate-800 p-4 h-64"
+              className="bg-[#080E1E] rounded-md border border-[#131E35] p-4 h-56 animate-pulse"
             />
           ))}
         </div>
       ) : filteredImages.length === 0 ? (
-        <div className="bg-[#0B132B]/40 rounded-xl border border-slate-800/80 p-12 text-center my-6">
-          <Filter className="w-10 h-10 mx-auto text-slate-600 mb-3" />
-          <h3 className="text-base font-semibold text-slate-300">
-            No Images Match This Filter
+        <div className="bg-[#080E1E] rounded-md border border-[#131E35] p-10 text-center my-4">
+          <Filter className="w-8 h-8 mx-auto text-slate-600 mb-2" />
+          <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wide">
+            No Frames Match Filter
           </h3>
-          <p className="text-xs font-mono text-slate-500 mt-1">
-            {searchQuery ? `No frames matching "${searchQuery}"` : 'Try selecting another classification category'}
+          <p className="text-[11px] text-slate-500 mt-1">
+            {searchQuery ? `No frames matching "${searchQuery}"` : 'Select another classification tab'}
           </p>
         </div>
       ) : (
         <div
-          className={`grid gap-4 pt-2 ${
+          className={`grid gap-3 pt-1 ${
             viewMode === 'grid'
               ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
               : 'grid-cols-1'

@@ -14,7 +14,7 @@ export function QueueAndWindowCard({
   revolution,
   timeRemaining = null,
 }: QueueAndWindowCardProps) {
-  // Filter out the currently transmitting active image from upcoming list
+  // Filter out active transmitting image
   const upcomingQueue = queue
     .filter((img) => img.id !== activeImageId && img.status !== 'complete')
     .slice(0, 3);
@@ -33,75 +33,79 @@ export function QueueAndWindowCard({
     : '—';
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
       {/* 1. Upcoming Transmission Queue */}
-      <div className="md:col-span-7 bg-[#0B132B]/80 backdrop-blur-md rounded-xl border border-cyan-900/30 p-4 flex flex-col justify-between hover:border-cyan-500/40 transition-colors shadow-lg shadow-black/40">
-        <div className="flex items-center justify-between mb-2">
-          <div className="text-[11px] font-semibold tracking-wider text-slate-400 uppercase flex items-center gap-1.5">
-            <Database className="w-3.5 h-3.5 text-cyan-400" />
+      <div className="md:col-span-7 bg-[#080E1E] rounded-md border border-[#131E35] p-3.5 flex flex-col justify-between">
+        <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-[#131E35]">
+          <div className="text-[10px] font-semibold tracking-wide text-slate-400 uppercase flex items-center gap-1.5">
+            <Database className="w-3 h-3 text-cyan-400" />
             <span>Upcoming Queue ({displayList.length})</span>
           </div>
-          <span className="text-[10px] font-mono text-slate-400">PRIORITIZED</span>
+          <span className="text-[9px] text-slate-400 font-mono">PRIORITIZED</span>
         </div>
 
-        <div className="space-y-1.5">
-          {displayList.length === 0 ? <div className="py-5 text-center text-[11px] font-mono text-slate-500">EMPTY QUEUE</div> : displayList.map((item, index) => {
-            const isClear = item.classification === 'CLEAR';
-            const isCloudy = item.classification === 'CLOUDY';
-            return (
-              <div
-                key={item.id}
-                className="flex items-center justify-between py-1.5 px-3 rounded-lg bg-slate-900/50 border border-slate-800/50 text-xs font-mono"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-slate-500 text-[11px] font-bold">{index + 1}</span>
-                  <span className="text-white font-medium">{item.id}</span>
-                  <span
-                    className={`text-[10px] px-1.5 py-0.2 rounded font-semibold ${
-                      isClear
-                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                        : isCloudy
-                        ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                        : 'bg-slate-700/50 text-slate-400'
-                    }`}
-                  >
-                    {item.classification || 'CLEAR'}
+        <div className="space-y-1">
+          {displayList.length === 0 ? (
+            <div className="py-4 text-center text-[10px] text-slate-500 font-mono">EMPTY QUEUE</div>
+          ) : (
+            displayList.map((item, index) => {
+              const isClear = item.classification === 'CLEAR';
+              const isCloudy = item.classification === 'CLOUDY';
+              return (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between py-1 px-2 rounded bg-[#050810] border border-[#131E35] text-xs"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-500 font-mono text-[10px] tabular-nums">{index + 1}</span>
+                    <span className="text-slate-200 font-mono font-medium text-xs">{item.id}</span>
+                    <span
+                      className={`text-[9px] px-1 py-0.2 rounded font-semibold uppercase ${
+                        isClear
+                          ? 'bg-[#062D24] text-emerald-400 border border-emerald-500/30'
+                          : isCloudy
+                          ? 'bg-[#0C2548] text-blue-400 border border-blue-500/30'
+                          : 'bg-slate-800 text-slate-400'
+                      }`}
+                    >
+                      {item.classification || 'CLEAR'}
+                    </span>
+                  </div>
+                  <span className="text-slate-400 font-mono text-[10px]">
+                    P{item.priority}
                   </span>
                 </div>
-                <span className="text-amber-400 font-bold text-[11px]">
-                  P{item.priority}
-                </span>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </div>
 
       {/* 2. Orbit Contact Window */}
-      <div className="md:col-span-5 bg-[#0B132B]/80 backdrop-blur-md rounded-xl border border-cyan-900/30 p-4 flex flex-col justify-between hover:border-cyan-500/40 transition-colors shadow-lg shadow-black/40">
-        <div className="flex items-center justify-between mb-2">
-          <div className="text-[11px] font-semibold tracking-wider text-slate-400 uppercase flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5 text-cyan-400" />
-            <span>{revNum === null ? 'Revolution —' : `Revolution #${revNum}`}</span>
+      <div className="md:col-span-5 bg-[#080E1E] rounded-md border border-[#131E35] p-3.5 flex flex-col justify-between">
+        <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-[#131E35]">
+          <div className="text-[10px] font-semibold tracking-wide text-slate-400 uppercase flex items-center gap-1.5">
+            <Clock className="w-3 h-3 text-cyan-400" />
+            <span>{revNum === null ? 'Rev —' : `Rev #${revNum}`}</span>
           </div>
-          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-            {revolution ? 'ACTIVE WINDOW' : 'UNAVAILABLE'}
+          <span className="text-[9px] px-1.5 py-0.2 rounded bg-[#062D24] text-emerald-400 border border-emerald-500/30 font-semibold uppercase">
+            {revolution ? 'In Contact' : 'Standby'}
           </span>
         </div>
 
-        <div className="space-y-1.5 text-xs font-mono">
+        <div className="space-y-1 text-xs">
           <div className="flex items-center justify-between">
-            <span className="text-slate-400">Contact Window</span>
-            <span className="text-slate-200">{windowStart} – {windowEnd} UTC</span>
+            <span className="text-slate-400 text-[11px]">Window</span>
+            <span className="text-slate-200 text-[11px] font-mono tabular-nums">{windowStart}–{windowEnd} UTC</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-slate-400">Time Remaining</span>
-            <span className="text-emerald-400 font-bold">{countdown} remaining</span>
+            <span className="text-slate-400 text-[11px]">Remaining</span>
+            <span className="text-cyan-300 font-bold font-mono text-[11px] tabular-nums">{countdown}</span>
           </div>
         </div>
 
-        <div className="text-[10px] font-mono text-slate-500 mt-2 pt-1.5 border-t border-slate-800/60">
-          Downlink window constrained to 60s contact pass
+        <div className="text-[9px] text-slate-500 mt-1.5 pt-1 border-t border-[#131E35]">
+          60-second LEO pass window
         </div>
       </div>
     </div>

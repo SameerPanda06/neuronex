@@ -1,125 +1,120 @@
 import type { Image } from '../../types';
-import { Satellite } from 'lucide-react';
+import { Eye, Radio } from 'lucide-react';
 
 interface ActiveImageCardProps {
-  image: Image | null;
+  activeImage: Image | null;
 }
 
-export function ActiveImageCard({ image }: ActiveImageCardProps) {
-  if (!image) {
-    return (
-      <div className="bg-[#0B132B]/80 backdrop-blur-md rounded-xl border border-cyan-900/30 p-5 flex flex-col justify-between shadow-lg shadow-black/40 h-full min-h-[300px]">
-        <div className="text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
-          Active Image
-        </div>
-        <div className="flex flex-col items-center justify-center py-12 text-center text-slate-500">
-          <Satellite className="w-12 h-12 mb-3 opacity-30 text-cyan-400" />
-          <p className="text-sm font-medium text-slate-300">No Active Downlink</p>
-          <p className="text-xs text-slate-500 mt-1">Waiting for transmission data</p>
-        </div>
-      </div>
-    );
-  }
-
-  const confidence = image.confidence === null ? null : (image.confidence * 100).toFixed(1);
-  const capturedTime = image.classified_at
-    ? new Date(image.classified_at).toLocaleTimeString('en-GB', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) + ' UTC'
+export function ActiveImageCard({ activeImage }: ActiveImageCardProps) {
+  const isStreaming = activeImage !== null && activeImage.status === 'transmitting';
+  const confidence = activeImage?.confidence ? `${(activeImage.confidence * 100).toFixed(1)}%` : '—';
+  const timeString = activeImage?.classified_at
+    ? new Date(activeImage.classified_at).toLocaleTimeString('en-GB', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) + ' UTC'
     : '—';
-  const resolution = '1024 × 1024';
-  const jpegQuality = image.jpeg_quality;
-
-  const isClear = image.classification === 'CLEAR';
-  const isCloudy = image.classification === 'CLOUDY';
 
   return (
-    <div className="bg-[#0B132B]/80 backdrop-blur-md rounded-xl border border-cyan-900/30 p-5 flex flex-col justify-between hover:border-cyan-500/40 transition-colors shadow-lg shadow-black/40">
-      <div className="text-[11px] font-semibold tracking-wider text-slate-400 uppercase mb-3">
-        Active Image
-      </div>
-
-      {/* Satellite Earth Image Preview */}
-      <div className="relative rounded-lg overflow-hidden border border-cyan-500/30 bg-slate-950 aspect-[16/10] flex items-center justify-center shadow-inner group">
-        <div className="absolute inset-0 bg-gradient-to-br from-cyan-950/80 via-slate-900 to-blue-950/80 flex items-center justify-center">
-          <svg viewBox="0 0 320 200" className="w-full h-full opacity-70">
-            <defs>
-              <radialGradient id="earthGlow2" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="#0284c7" stopOpacity="0.9" />
-                <stop offset="65%" stopColor="#0369a1" stopOpacity="0.45" />
-                <stop offset="100%" stopColor="#082f49" stopOpacity="0.1" />
-              </radialGradient>
-            </defs>
-            <circle cx="160" cy="100" r="75" fill="url(#earthGlow2)" />
-            {/* Coastal geography contours */}
-            <path d="M120,70 Q145,55 170,80 T200,65 T215,105 T180,135 T135,125 Z" fill="#059669" opacity="0.6" />
-            <path d="M105,90 Q125,115 140,100 T155,145 T120,155 Z" fill="#10b981" opacity="0.5" />
-            {/* Cloud coverage wisps */}
-            <path d="M130,85 Q160,75 190,95 T170,115 Z" fill="#ffffff" opacity="0.25" />
-            {/* Orbital telemetry grid */}
-            <line x1="20" y1="100" x2="300" y2="100" stroke="#38bdf8" strokeWidth="0.75" strokeDasharray="4 4" opacity="0.5" />
-            <line x1="160" y1="20" x2="160" y2="180" stroke="#38bdf8" strokeWidth="0.75" strokeDasharray="4 4" opacity="0.5" />
-            <circle cx="160" cy="100" r="45" stroke="#38bdf8" strokeWidth="0.5" strokeDasharray="2 2" fill="none" opacity="0.3" />
-          </svg>
-        </div>
-
-        {/* Reticle brackets */}
-        <div className="absolute top-2 left-2 w-3 h-3 border-t-2 border-l-2 border-cyan-400" />
-        <div className="absolute top-2 right-2 w-3 h-3 border-t-2 border-r-2 border-cyan-400" />
-        <div className="absolute bottom-2 left-2 w-3 h-3 border-b-2 border-l-2 border-cyan-400" />
-        <div className="absolute bottom-2 right-2 w-3 h-3 border-b-2 border-r-2 border-cyan-400" />
-
-        <div className="absolute bottom-2 left-2.5 text-[10px] font-mono font-semibold text-cyan-300 bg-black/70 px-1.5 py-0.5 rounded border border-cyan-500/30 backdrop-blur-sm">
-          EARTH OBSERVATION PAYLOAD
-        </div>
-      </div>
-
-      {/* Image ID and Badges */}
-      <div className="flex items-center justify-between mt-4 pb-3 border-b border-slate-800/80 flex-wrap gap-2">
-        <div>
-          <span className="text-lg font-bold font-space text-white tracking-wide">
-            {image.id}
-          </span>
-        </div>
+    <div className="bg-[#080E1E] rounded-md border border-[#131E35] p-4 space-y-3">
+      {/* Header */}
+      <div className="flex items-center justify-between pb-2 border-b border-[#131E35]">
         <div className="flex items-center gap-2">
+          <Eye className="w-3.5 h-3.5 text-cyan-400" />
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-white">
+            Current Downlink Frame
+          </h3>
+        </div>
+
+        <div className="flex items-center gap-1.5">
           <span
-            className={`px-2.5 py-0.5 rounded text-xs font-semibold ${
-              isClear
-                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-                : isCloudy
-                ? 'bg-blue-500/20 text-blue-400 border border-blue-500/40'
-                : 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
+            className={`px-1.5 py-0.2 rounded text-[9px] font-semibold uppercase tracking-wider ${
+              isStreaming
+                ? 'bg-[#0E1B38] text-cyan-300 border border-cyan-400/50'
+                : 'bg-slate-800 text-slate-400'
             }`}
           >
-            {image.classification || 'CLEAR'}
-          </span>
-          <span className="text-xs font-mono font-bold text-amber-400">
-            Priority P{image.priority}
+            {isStreaming ? 'Transmitting' : 'Idle'}
           </span>
         </div>
       </div>
 
-      {/* Metadata Attributes */}
-      <div className="space-y-2 text-xs font-mono pt-3">
-        <div className="flex items-center justify-between">
-          <span className="text-slate-400">Mission</span>
-          <span className="text-slate-200 font-semibold">{image.mission_id}</span>
+      {activeImage ? (
+        <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+          {/* SVG Frame Inspection Preview (5 cols) */}
+          <div className="sm:col-span-5 relative aspect-square bg-[#050810] rounded border border-[#131E35] overflow-hidden flex items-center justify-center">
+            <svg viewBox="0 0 200 200" className="w-full h-full">
+              <defs>
+                <radialGradient id="liveEarthGlow" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#0284c7" stopOpacity="0.8" />
+                  <stop offset="70%" stopColor="#0369a1" stopOpacity="0.3" />
+                  <stop offset="100%" stopColor="#082f49" stopOpacity="0.1" />
+                </radialGradient>
+              </defs>
+              <circle cx="100" cy="100" r="70" fill="url(#liveEarthGlow)" />
+              <path
+                d="M60,80 Q90,50 130,70 T160,110 T120,150 T70,130 Z"
+                fill="#047857"
+                opacity="0.7"
+              />
+              <line x1="20" y1="100" x2="180" y2="100" stroke="#0ea5e9" strokeWidth="0.5" strokeDasharray="2 2" opacity="0.3" />
+              <line x1="100" y1="20" x2="100" y2="180" stroke="#0ea5e9" strokeWidth="0.5" strokeDasharray="2 2" opacity="0.3" />
+            </svg>
+
+            {/* Inset Metadata Badges */}
+            <div className="absolute top-1.5 left-1.5 bg-[#050810]/90 px-1 py-0.2 rounded text-[9px] font-mono text-cyan-300 border border-[#131E35]">
+              512x512
+            </div>
+            <div className="absolute bottom-1.5 right-1.5 bg-[#050810]/90 px-1 py-0.2 rounded text-[9px] font-mono text-slate-300 border border-[#131E35]">
+              Q{activeImage.jpeg_quality ?? 85}
+            </div>
+          </div>
+
+          {/* Target Metadata Table (7 cols) */}
+          <div className="sm:col-span-7 space-y-1.5 flex flex-col justify-between text-xs">
+            <div className="flex items-center justify-between">
+              <span className="font-mono font-bold text-sm text-white">
+                {activeImage.id}
+              </span>
+              <span className="text-[10px] font-mono font-semibold px-1.5 py-0.2 rounded bg-[#050810] text-slate-300 border border-[#131E35]">
+                Priority P{activeImage.priority}
+              </span>
+            </div>
+
+            <div className="space-y-1">
+              <div className="flex items-center justify-between p-1.5 rounded bg-[#050810] border border-[#131E35]">
+                <span className="text-slate-400 text-[11px]">Classification</span>
+                <span className="px-1.5 py-0.2 rounded bg-[#062D24] text-emerald-400 border border-emerald-500/30 text-[10px] font-semibold uppercase">
+                  {activeImage.classification || 'CLEAR'}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between p-1.5 rounded bg-[#050810] border border-[#131E35]">
+                <span className="text-slate-400 text-[11px]">AI Confidence</span>
+                <span className="font-mono font-semibold text-white text-[11px] tabular-nums">{confidence}</span>
+              </div>
+
+              <div className="flex items-center justify-between p-1.5 rounded bg-[#050810] border border-[#131E35]">
+                <span className="text-slate-400 text-[11px]">Edge Decision</span>
+                <span className="text-cyan-300 font-semibold uppercase text-[11px]">{activeImage.action || 'KEEP'}</span>
+              </div>
+
+              <div className="flex items-center justify-between p-1.5 rounded bg-[#050810] border border-[#131E35]">
+                <span className="text-slate-400 text-[11px]">Inference Latency</span>
+                <span className="font-mono text-slate-200 text-[11px] tabular-nums">{activeImage.latency_ms ?? 24} ms</span>
+              </div>
+
+              <div className="flex items-center justify-between p-1.5 rounded bg-[#050810] border border-[#131E35]">
+                <span className="text-slate-400 text-[11px]">Acquisition UTC</span>
+                <span className="font-mono text-slate-300 text-[10px] tabular-nums">{timeString}</span>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="flex items-center justify-between">
-          <span className="text-slate-400">Captured</span>
-          <span className="text-slate-200 font-semibold">{capturedTime}</span>
+      ) : (
+        <div className="py-10 text-center text-slate-500">
+          <Radio className="w-8 h-8 mx-auto mb-2 text-slate-600" />
+          <p className="text-xs font-semibold text-slate-300 uppercase tracking-wide">No Active Transmission</p>
+          <p className="text-[11px] text-slate-500 mt-0.5">Ground station receiver is standing by for next LEO contact pass</p>
         </div>
-        <div className="flex items-center justify-between">
-          <span className="text-slate-400">AI Confidence</span>
-          <span className="text-emerald-400 font-semibold">{confidence === null ? '—' : `${confidence}%`}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-slate-400">Resolution</span>
-          <span className="text-slate-200 font-semibold">{resolution}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-slate-400">JPEG Quality</span>
-          <span className="text-slate-200 font-semibold">{jpegQuality === null ? '—' : `${jpegQuality}%`}</span>
-        </div>
-      </div>
+      )}
     </div>
   );
 }

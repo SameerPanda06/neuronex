@@ -13,12 +13,12 @@ export function RetransmissionAlertCard({
 
   if (!hasMissing) {
     return (
-      <div className="p-3 rounded-xl bg-emerald-950/30 border border-emerald-500/30 flex items-center justify-between text-xs font-mono">
+      <div className="p-2.5 rounded bg-[#080E1E] border border-[#131E35] flex items-center justify-between text-xs">
         <div className="flex items-center gap-2 text-emerald-400">
-          <CheckCircle2 className="w-4 h-4" />
-          <span className="font-semibold tracking-wide">NO ACTIVE RETRANSMISSION</span>
+          <CheckCircle2 className="w-3.5 h-3.5" />
+          <span className="font-semibold text-[11px] uppercase tracking-wide">All Downlink Segments Nominal</span>
         </div>
-        <span className="text-[11px] text-emerald-400/80">No NACK segment data</span>
+        <span className="text-[10px] text-slate-400">Zero packet drop detected</span>
       </div>
     );
   }
@@ -31,25 +31,25 @@ export function RetransmissionAlertCard({
       : 'PENDING ARQ';
 
   return (
-    <div className="p-3.5 rounded-xl bg-rose-950/25 border border-rose-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono shadow-md shadow-rose-950/30">
-      <div className="flex items-center gap-2.5">
-        <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+    <div className="p-2.5 rounded bg-[#180A12] border border-rose-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
+      <div className="flex items-center gap-2">
+        <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
         <div>
-          <span className="font-bold text-rose-300 tracking-wider mr-2">
-            RETRANSMISSION REQUIRED
+          <span className="font-bold text-rose-300 text-[11px] mr-2 uppercase tracking-wide">
+            ARQ Retransmission Required:
           </span>
-          <span className="text-slate-300">
-            {missingSegments.length} lost {missingSegments.length === 1 ? 'segment' : 'segments'}:
+          <span className="text-slate-300 text-[11px]">
+            {missingSegments.length} dropped {missingSegments.length === 1 ? 'segment' : 'segments'}
           </span>
         </div>
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1">
           {missingSegments.map((seg) => (
             <span
               key={seg}
-              className="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold text-[11px]"
+              className="px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40 font-mono font-bold text-[10px] tabular-nums"
             >
               #{seg}
             </span>
@@ -57,9 +57,9 @@ export function RetransmissionAlertCard({
         </div>
 
         <span
-          className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+          className={`px-1.5 py-0.2 rounded text-[9px] font-bold uppercase tracking-wider ${
             status === 'acknowledged'
-              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse'
+              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
               : 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
           }`}
         >

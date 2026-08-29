@@ -34,7 +34,6 @@ export function RevolutionSignalHeatmap({
   const totalWindowSec = activeRev?.window_duration_sec ?? 60;
   const activeProgressPercent = Math.max(0, Math.min(100, Math.round(((totalWindowSec - timeRemaining) / totalWindowSec) * 100)));
 
-  // Generate 5 consecutive revolution passes ending at active/next
   const numSlices = 12;
 
   // Generate heatmap rows
@@ -51,9 +50,8 @@ export function RevolutionSignalHeatmap({
       const sec = timeOffsetSec % 60;
       const timeOffsetLabel = `T+${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
 
-      // Simulate realistic parabolic RF link curve through contact window:
-      // Lowest at AOS (i=0) and LOS (i=numSlices-1), peak at TCA culmination (i=numSlices/2)
-      const normalizedDist = Math.abs(i - (numSlices - 1) / 2) / ((numSlices - 1) / 2); // 0 at peak, 1 at horizon
+      // Simulate realistic parabolic RF link curve through contact window
+      const normalizedDist = Math.abs(i - (numSlices - 1) / 2) / ((numSlices - 1) / 2);
       const passSeed = (revNum * 13) % 7;
       const peakRssi = -64 - passSeed * 1.5;
       const horizonRssi = -112 + passSeed;
@@ -96,62 +94,52 @@ export function RevolutionSignalHeatmap({
   // Color generator for cell
   const getCellBg = (cell: HeatmapCell) => {
     if (cell.status === 'future' || cell.status === 'scheduled') {
-      return 'bg-slate-900/40 border-slate-800/60 text-slate-600';
+      return 'bg-[#050810] border-[#131E35] text-slate-600';
     }
     if (cell.status === 'active') {
-      return 'bg-cyan-400 text-cyan-950 font-bold border-cyan-300 ring-2 ring-cyan-400/80 shadow-md shadow-cyan-500/50 animate-pulse';
+      return 'bg-cyan-400 text-slate-950 font-bold border-cyan-300';
     }
     const r = cell.rssi;
-    if (r >= -68) return 'bg-emerald-400 border-emerald-300 text-emerald-950';
-    if (r >= -78) return 'bg-cyan-400 border-cyan-300 text-cyan-950';
-    if (r >= -88) return 'bg-teal-600 border-teal-500 text-teal-100';
-    if (r >= -100) return 'bg-cyan-950 border-cyan-800/60 text-cyan-300';
-    return 'bg-slate-900 border-slate-800 text-slate-500';
+    if (r >= -68) return 'bg-emerald-500/80 border-emerald-400/50 text-emerald-950 font-semibold';
+    if (r >= -78) return 'bg-cyan-500/80 border-cyan-400/50 text-cyan-950 font-semibold';
+    if (r >= -88) return 'bg-teal-700 border-teal-600/50 text-teal-100';
+    if (r >= -100) return 'bg-[#0A1A30] border-[#132A4D] text-cyan-400';
+    return 'bg-[#050810] border-[#131E35] text-slate-600';
   };
 
   return (
-    <div className="bg-[#0B132B]/85 backdrop-blur-md rounded-xl border border-cyan-900/30 p-5 hover:border-cyan-500/40 transition-colors shadow-lg shadow-black/40">
+    <div className="bg-[#080E1E] rounded-md border border-[#131E35] p-4">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 pb-2 mb-3 border-b border-[#131E35]">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 bg-cyan-500/10 border border-cyan-500/30 rounded-lg text-cyan-400">
-            <Orbit className="w-4 h-4" />
-          </div>
-          <div>
-            <h3 className="font-space font-bold text-sm text-white flex items-center gap-2">
-              REVOLUTION SIGNAL HEATMAP
-              <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded bg-slate-900 text-cyan-400 border border-cyan-900/40">
-                PASS PROFILE
-              </span>
-            </h3>
-            <p className="text-[11px] font-mono text-slate-400">
-              Orbital pass contact window link quality (AOS → TCA Culmination → LOS)
-            </p>
-          </div>
+          <Orbit className="w-3.5 h-3.5 text-cyan-400" />
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-white">
+            Revolution Contact Link Profile (Heatmap)
+          </h3>
         </div>
 
         {/* Legend */}
-        <div className="flex items-center gap-2 text-[10px] font-mono text-slate-400">
-          <span className="font-semibold text-slate-500">INTENSITY:</span>
+        <div className="flex items-center gap-2 text-[9px] text-slate-400">
+          <span className="text-slate-500 font-semibold uppercase">Signal:</span>
           <div className="flex items-center gap-1">
-            <span className="w-3 h-3 rounded bg-slate-900 border border-slate-800" title="Weak / Horizon" />
-            <span className="text-slate-500">WEAK</span>
+            <span className="w-2.5 h-2.5 bg-[#050810] border border-[#131E35]" />
+            <span>Horizon</span>
           </div>
           <div className="flex items-center gap-1">
-            <span className="w-3 h-3 rounded bg-cyan-950 border border-cyan-800" title="Fair" />
-            <span className="text-slate-400">FAIR</span>
+            <span className="w-2.5 h-2.5 bg-[#0A1A30] border border-[#132A4D]" />
+            <span>Fair</span>
           </div>
           <div className="flex items-center gap-1">
-            <span className="w-3 h-3 rounded bg-teal-600 border border-teal-500" title="Good" />
-            <span className="text-teal-300">GOOD</span>
+            <span className="w-2.5 h-2.5 bg-teal-700 border border-teal-600/50" />
+            <span>Good</span>
           </div>
           <div className="flex items-center gap-1">
-            <span className="w-3 h-3 rounded bg-cyan-400 border border-cyan-300" title="Strong" />
-            <span className="text-cyan-300">STRONG</span>
+            <span className="w-2.5 h-2.5 bg-cyan-500/80 border border-cyan-400/50" />
+            <span>Strong</span>
           </div>
           <div className="flex items-center gap-1">
-            <span className="w-3 h-3 rounded bg-emerald-400 border border-emerald-300" title="Optimal" />
-            <span className="text-emerald-300">PEAK</span>
+            <span className="w-2.5 h-2.5 bg-emerald-500/80 border border-emerald-400/50" />
+            <span>Peak</span>
           </div>
         </div>
       </div>
@@ -160,59 +148,52 @@ export function RevolutionSignalHeatmap({
       <div className="overflow-x-auto">
         <div className="min-w-[650px]">
           {/* Column Header: Contact Window Normalized Progress */}
-          <div className="grid grid-cols-12 gap-1.5 mb-2 pl-24 pr-2 text-center text-[10px] font-mono text-slate-400">
+          <div className="grid grid-cols-12 gap-1 mb-1.5 pl-20 pr-1 text-center text-[9px] text-slate-400">
             <div className="col-span-1 text-left">AOS (0%)</div>
             <div className="col-span-10 text-center flex items-center justify-center gap-2">
-              <span className="h-[1px] flex-1 bg-slate-800" />
+              <span className="h-[1px] flex-1 bg-[#131E35]" />
               <span className="text-cyan-400 font-semibold flex items-center gap-1">
                 <Radio className="w-3 h-3" /> TCA CULMINATION (MAX ELEVATION)
               </span>
-              <span className="h-[1px] flex-1 bg-slate-800" />
+              <span className="h-[1px] flex-1 bg-[#131E35]" />
             </div>
             <div className="col-span-1 text-right">LOS (100%)</div>
           </div>
 
           {/* Rows */}
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {rows.map((row) => (
               <div
                 key={row.revNum}
                 className={cn(
-                  'flex items-center gap-2 p-2 rounded-lg border transition-all duration-150',
+                  'flex items-center gap-2 p-1.5 rounded border transition-colors',
                   row.isCurrentActive
-                    ? 'bg-[#070D1C] border-cyan-500/50 shadow-md shadow-cyan-950/40'
-                    : 'bg-slate-950/40 border-slate-800/60 hover:border-slate-700'
+                    ? 'bg-[#0B152B] border-cyan-500/40'
+                    : 'bg-[#050810] border-[#131E35]'
                 )}
               >
                 {/* Row Label */}
-                <div className="w-22 shrink-0 flex flex-col justify-center">
-                  <div className="flex items-center gap-1.5">
+                <div className="w-18 shrink-0 flex flex-col justify-center">
+                  <div className="flex items-center gap-1">
                     {row.isCurrentActive && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shrink-0" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0" />
                     )}
                     <span
                       className={cn(
-                        'text-xs font-mono font-bold',
+                        'text-xs font-bold font-mono',
                         row.isCurrentActive ? 'text-cyan-300' : 'text-slate-300'
                       )}
                     >
-                      REV #{row.revNum}
+                      Rev #{row.revNum}
                     </span>
                   </div>
-                  <span
-                    className={cn(
-                      'text-[9px] font-mono tracking-wider',
-                      row.isCurrentActive
-                        ? 'text-cyan-400 font-semibold'
-                        : 'text-slate-400'
-                    )}
-                  >
+                  <span className="text-[8px] text-slate-500 font-mono">
                     {row.status}
                   </span>
                 </div>
 
                 {/* Heatmap Slices */}
-                <div className="grid grid-cols-12 gap-1.5 flex-1">
+                <div className="grid grid-cols-12 gap-1 flex-1">
                   {row.cells.map((cell) => (
                     <button
                       key={cell.sliceIndex}
@@ -226,16 +207,16 @@ export function RevolutionSignalHeatmap({
                       }
                       onMouseLeave={() => setHoveredCell(null)}
                       className={cn(
-                        'h-8 rounded-md border text-[9px] font-mono flex items-center justify-center transition-transform hover:scale-105 relative cursor-pointer',
+                        'h-7 rounded-none border text-[9px] font-mono flex items-center justify-center transition-colors select-none tabular-nums',
                         getCellBg(cell)
                       )}
                     >
                       {cell.status === 'active' ? (
-                        <span className="text-[10px] font-black">●</span>
+                        <span className="text-[10px] font-bold">●</span>
                       ) : cell.status === 'future' ? (
                         <span className="text-[8px] opacity-40">·</span>
                       ) : (
-                        <span className="opacity-80">{cell.rssi}</span>
+                        <span className="opacity-90">{cell.rssi}</span>
                       )}
                     </button>
                   ))}
@@ -247,24 +228,24 @@ export function RevolutionSignalHeatmap({
       </div>
 
       {/* Interactive Cell Details Bar */}
-      <div className="mt-3 pt-3 border-t border-slate-800/80 flex flex-wrap items-center justify-between text-xs font-mono">
+      <div className="mt-2.5 pt-2 border-t border-[#131E35] flex flex-wrap items-center justify-between text-xs">
         {hoveredCell ? (
-          <div className="flex items-center gap-4 text-slate-200">
-            <span className="text-cyan-400 font-bold">REV #{hoveredCell.revNum}</span>
-            <span className="text-slate-400">Position: <strong className="text-slate-200">{hoveredCell.cell.timeOffsetLabel} ({hoveredCell.cell.percent}%)</strong></span>
-            <span className="text-slate-400">RSSI: <strong className="text-cyan-300 font-bold">{hoveredCell.cell.rssi} dBm</strong></span>
-            <span className="text-slate-400">SNR: <strong className="text-teal-300 font-bold">{hoveredCell.cell.snr} dB</strong></span>
-            <span className="text-slate-400">State: <strong className="text-emerald-400 uppercase font-semibold">{hoveredCell.cell.status}</strong></span>
+          <div className="flex items-center gap-3 text-slate-300 text-[11px]">
+            <span className="text-cyan-400 font-bold font-mono">Rev #{hoveredCell.revNum}</span>
+            <span>Position: <strong className="text-white font-mono">{hoveredCell.cell.timeOffsetLabel} ({hoveredCell.cell.percent}%)</strong></span>
+            <span>RSSI: <strong className="text-cyan-300 font-mono tabular-nums">{hoveredCell.cell.rssi} dBm</strong></span>
+            <span>SNR: <strong className="text-teal-300 font-mono tabular-nums">{hoveredCell.cell.snr} dB</strong></span>
+            <span>State: <strong className="text-emerald-400 uppercase">{hoveredCell.cell.status}</strong></span>
           </div>
         ) : (
-          <div className="flex items-center gap-2 text-slate-400 text-[11px]">
-            <Info className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-            <span>Hover over any contact window slice to inspect precise RF link parameters and elevation geometry.</span>
+          <div className="flex items-center gap-1.5 text-slate-500 text-[10px]">
+            <Info className="w-3 h-3 text-cyan-400 shrink-0" />
+            <span>Hover over any contact slice to inspect precise RF link parameters and culmination geometry.</span>
           </div>
         )}
 
-        <div className="text-[11px] text-slate-400">
-          Normalized contact pass window: <span className="text-slate-300 font-bold">60s span</span>
+        <div className="text-[10px] text-slate-500">
+          Normalized pass window: <span className="text-slate-400 font-bold font-mono">60s span</span>
         </div>
       </div>
     </div>

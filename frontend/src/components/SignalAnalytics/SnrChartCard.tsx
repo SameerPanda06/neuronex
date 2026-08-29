@@ -50,20 +50,20 @@ export function SnrChartCard({ telemetry, loading }: SnrChartCardProps) {
       const val = payload[0].value;
       const data = payload[0].payload;
       return (
-        <div className="bg-[#070D1C] border border-teal-500/40 rounded-lg p-2.5 shadow-xl font-mono text-xs z-50">
-          <div className="text-[10px] text-slate-400 border-b border-slate-800 pb-1 mb-1.5 flex items-center justify-between gap-4">
+        <div className="bg-[#070D1A] border border-[#1E2E52] rounded p-2 shadow-xl text-xs z-50">
+          <div className="text-[10px] font-mono text-slate-400 border-b border-[#131E35] pb-1 mb-1 flex items-center justify-between gap-3">
             <span>{label}</span>
-            <span className="px-1.5 py-0.2 rounded bg-teal-950 text-teal-300 text-[9px] border border-teal-800/40">
+            <span className="px-1 py-0.2 rounded bg-[#0D1830] text-teal-300 text-[9px] border border-teal-800/40">
               {data.packet_type}
             </span>
           </div>
-          <div className="flex items-center justify-between gap-4">
-            <span className="text-slate-300">SNR:</span>
-            <span className={cn('font-bold', getSnrQualityClass(val))}>{val} dB</span>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-slate-400">SNR:</span>
+            <span className={cn('font-bold font-mono tabular-nums', getSnrQualityClass(val))}>{val} dB</span>
           </div>
-          <div className="flex items-center justify-between gap-4 mt-0.5">
-            <span className="text-slate-400 text-[10px]">Quality:</span>
-            <span className="text-slate-200 text-[10px] uppercase">{getSnrQualityLabel(val)}</span>
+          <div className="flex items-center justify-between gap-3 mt-0.5">
+            <span className="text-slate-500 text-[10px]">Quality:</span>
+            <span className="text-slate-300 text-[10px] uppercase font-semibold">{getSnrQualityLabel(val)}</span>
           </div>
         </div>
       );
@@ -72,99 +72,89 @@ export function SnrChartCard({ telemetry, loading }: SnrChartCardProps) {
   };
 
   return (
-    <div className="bg-[#0B132B]/85 backdrop-blur-md rounded-xl border border-cyan-900/30 p-5 flex flex-col justify-between hover:border-cyan-500/40 transition-colors shadow-lg shadow-black/40 h-full">
+    <div className="bg-[#080E1E] rounded-md border border-[#131E35] p-4 flex flex-col justify-between h-full">
       {/* Chart Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 pb-2 mb-2 border-b border-[#131E35]">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 bg-teal-500/10 border border-teal-500/30 rounded-lg text-teal-400">
-            <Activity className="w-4 h-4" />
-          </div>
-          <div>
-            <h3 className="font-space font-bold text-sm text-white flex items-center gap-2">
-              SNR TELEMETRY (dB)
-              <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded bg-slate-900 text-teal-400 border border-teal-900/40">
-                SIGNAL MARGIN
-              </span>
-            </h3>
-            <p className="text-[11px] font-mono text-slate-400">
-              Signal-to-Noise Ratio over contact timeline
-            </p>
-          </div>
+          <Activity className="w-3.5 h-3.5 text-teal-400" />
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-white">
+            Signal-to-Noise Ratio (dB)
+          </h3>
         </div>
 
         {/* Min / Max / Avg / Current Callouts */}
-        <div className="flex items-center gap-3 font-mono text-xs">
-          <div className="hidden sm:flex items-center gap-2 text-[10px] bg-slate-950/60 px-2.5 py-1 rounded-lg border border-slate-800">
-            <span className="text-slate-500">MIN: <strong className="text-slate-300 font-bold">{minSnr === null ? '—' : minSnr.toFixed(1)}</strong></span>
-            <span className="text-slate-500">MAX: <strong className="text-slate-300 font-bold">{maxSnr === null ? '—' : maxSnr.toFixed(1)}</strong></span>
-            <span className="text-slate-500">AVG: <strong className="text-teal-400 font-bold">{avgSnr === null ? '—' : avgSnr.toFixed(1)}</strong></span>
+        <div className="flex items-center gap-2.5 text-xs">
+          <div className="hidden sm:flex items-center gap-2 text-[10px] bg-[#050810] px-2 py-0.5 rounded border border-[#131E35] font-mono">
+            <span className="text-slate-500">MIN: <strong className="text-slate-300 tabular-nums">{minSnr === null ? '—' : minSnr.toFixed(1)}</strong></span>
+            <span className="text-slate-500">MAX: <strong className="text-slate-300 tabular-nums">{maxSnr === null ? '—' : maxSnr.toFixed(1)}</strong></span>
+            <span className="text-slate-500">AVG: <strong className="text-teal-400 tabular-nums">{avgSnr === null ? '—' : avgSnr.toFixed(1)}</strong></span>
           </div>
 
-          <div className="text-right">
-            <div className="text-[10px] text-slate-400">CURRENT</div>
-            <div className={cn('text-sm font-black', getSnrQualityClass(latestSnr))}>
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] text-slate-400 uppercase">Current:</span>
+            <span className={cn('text-xs font-bold font-mono tabular-nums', getSnrQualityClass(latestSnr))}>
               {latestSnr === null ? '—' : `${latestSnr.toFixed(1)} dB`}
-            </div>
+            </span>
           </div>
         </div>
       </div>
 
       {/* Chart Canvas */}
-      <div className="w-full h-64 mt-2">
+      <div className="w-full h-56 mt-1">
         {loading && chartData.length === 0 ? (
-          <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 font-mono text-xs gap-2">
-            <Radio className="w-6 h-6 animate-pulse text-teal-400" />
-            <span>ACQUIRING SNR TELEMETRY...</span>
+          <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 text-xs gap-1.5 font-mono">
+            <Radio className="w-5 h-5 animate-pulse text-teal-400" />
+            <span>Acquiring SNR telemetry...</span>
           </div>
         ) : chartData.length === 0 ? (
-          <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 font-mono text-xs gap-2">
-            <Activity className="w-6 h-6 text-slate-600" />
-            <span>NO TELEMETRY AVAILABLE</span>
+          <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 text-xs gap-1.5">
+            <Activity className="w-5 h-5 text-slate-600" />
+            <span>No telemetry available</span>
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+              <CartesianGrid strokeDasharray="2 2" stroke="#131E35" vertical={false} />
               <XAxis
                 dataKey="time"
                 stroke="#64748b"
-                fontSize={10}
-                fontFamily="JetBrains Mono"
+                fontSize={9}
+                fontFamily="Cascadia Mono, Consolas, monospace"
                 tickLine={false}
-                axisLine={{ stroke: '#1e293b' }}
+                axisLine={{ stroke: '#131E35' }}
                 interval="preserveStartEnd"
               />
               <YAxis
                 domain={[-10, 16]}
                 ticks={[-10, -5, 0, 5, 10, 15]}
                 stroke="#64748b"
-                fontSize={10}
-                fontFamily="JetBrains Mono"
+                fontSize={9}
+                fontFamily="Cascadia Mono, Consolas, monospace"
                 tickLine={false}
-                axisLine={{ stroke: '#1e293b' }}
+                axisLine={{ stroke: '#131E35' }}
               />
               <Tooltip content={<CustomTooltip />} />
               {/* Noise floor and thresholds */}
               <ReferenceLine
                 y={0}
                 stroke="#64748b"
-                strokeDasharray="3 3"
-                label={{ value: 'NOISE FLOOR (0 dB)', position: 'insideBottomRight', fill: '#64748b', fontSize: 9, opacity: 0.6 }}
+                strokeDasharray="2 2"
+                label={{ value: 'NOISE FLOOR (0 dB)', position: 'insideBottomRight', fill: '#64748b', fontSize: 8, opacity: 0.6 }}
               />
               <ReferenceLine
                 y={10}
                 stroke="#10b981"
-                strokeDasharray="3 3"
-                strokeOpacity={0.4}
-                label={{ value: 'EXCELLENT (10 dB)', position: 'insideTopRight', fill: '#10b981', fontSize: 9, opacity: 0.6 }}
+                strokeDasharray="2 2"
+                strokeOpacity={0.5}
+                label={{ value: 'EXCELLENT (10 dB)', position: 'insideTopRight', fill: '#10b981', fontSize: 8, opacity: 0.7 }}
               />
               <Line
                 type="monotone"
                 dataKey="snr"
                 stroke="#14b8a6"
-                strokeWidth={2.2}
-                dot={{ r: 2, fill: '#14b8a6', stroke: '#070D1C', strokeWidth: 1 }}
-                activeDot={{ r: 5, fill: '#2dd4bf', stroke: '#fff', strokeWidth: 2 }}
+                strokeWidth={1.5}
+                dot={{ r: 1.5, fill: '#14b8a6', stroke: '#070D1A', strokeWidth: 1 }}
+                activeDot={{ r: 4, fill: '#2dd4bf', stroke: '#fff', strokeWidth: 1.5 }}
                 isAnimationActive={false}
               />
             </LineChart>

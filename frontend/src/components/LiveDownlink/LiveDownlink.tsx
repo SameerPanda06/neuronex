@@ -1,28 +1,31 @@
 import { useState, useEffect } from 'react';
-import { ActiveImageCard } from './ActiveImageCard';
-import { SignalMetricsCard } from './SignalMetricsCard';
-import { TransmissionProgressCard } from './TransmissionProgressCard';
-import { SegmentMapCard } from './SegmentMapCard';
-import { RetransmissionAlertCard } from './RetransmissionAlertCard';
-import { QueueAndWindowCard } from './QueueAndWindowCard';
 import { useImages } from '../../hooks/useImages';
 import { useQueue } from '../../hooks/useQueue';
-import { useRetransmissions } from '../../hooks/useRetransmissions';
+import { useSignalQuality } from '../../hooks/useTelemetry';
 import { useRevolutionStatus } from '../../hooks/useRevolutions';
+import { useRetransmissions } from '../../hooks/useRetransmissions';
 import { useConnection } from '../../hooks/useConnection';
+
+import { ActiveImageCard } from './ActiveImageCard';
+import { SegmentMapCard } from './SegmentMapCard';
+import { SignalMetricsCard } from './SignalMetricsCard';
+import { TransmissionProgressCard } from './TransmissionProgressCard';
+import { RetransmissionAlertCard } from './RetransmissionAlertCard';
+import { QueueAndWindowCard } from './QueueAndWindowCard';
 
 export function LiveDownlink() {
   const { connected, mode } = useConnection();
   const isMock = mode === 'mock';
   const isReplay = mode === 'replay';
-  const { images } = useImages({ status: 'transmitting', limit: 1 });
+  const { images: transmittingImages } = useImages({ status: 'transmitting', limit: 1 });
+  const { images: queuedImages } = useImages({ status: 'queued', limit: 5 });
   const { queue } = useQueue();
-  const { retransmissions } = useRetransmissions({ status: 'pending' });
+  const { data: signalData } = useSignalQuality(undefined, 1);
   const { status: revStatus } = useRevolutionStatus();
+  const { retransmissions } = useRetransmissions();
 
   const [utcTime, setUtcTime] = useState<string>('');
 
-  // Live UTC Clock
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
@@ -31,92 +34,86 @@ export function LiveDownlink() {
       const seconds = String(now.getUTCSeconds()).padStart(2, '0');
       setUtcTime(`${hours}:${minutes}:${seconds} UTC`);
     };
-
     updateTime();
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
   }, []);
 
-  const activeImage = images.find((img) => img.status === 'transmitting') ?? null;
-  const currentSeg = activeImage?.current_segment ?? activeImage?.segments_confirmed ?? 0;
-  const totalSegs = activeImage?.total_segments ?? 0;
+  const activeImage = transmittingImages[0] || null;
+  const isStreaming = activeImage !== null;
 
-  // Active missing segments from pending retransmissions
+  // Derive missing segments for active transmitting image if any ARQ exists
   const activeRetrans = retransmissions.find(
-    (r) => activeImage && r.image_id === activeImage.id && r.status === 'pending'
+    (r) => r.image_id === activeImage?.id
   );
-  const missingSegments = activeRetrans?.missing_segments ?? [];
+  const missingSegments = activeRetrans?.missing_segments || [];
 
-  const revNum = revStatus?.revolution?.revolution_num ?? null;
+  const timeRemaining = revStatus?.time_remaining ?? null;
 
   return (
-    <div className="space-y-5 pb-8">
-      {/* Top Header matching reference */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-2 border-b border-slate-800/60">
+    <div className="space-y-4 pb-6">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-[#131E35]">
         <div>
-          <h1 className="text-2xl font-bold font-space text-white tracking-wide">
-            LIVE DOWNLINK
-          </h1>
-          <p className="text-xs font-mono text-cyan-400/90 mt-0.5">
-            Real-time satellite image transmission
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold tracking-tight text-white">
+              Live Downlink
+            </h1>
+            <span
+              className={`text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                isStreaming
+                  ? 'bg-[#0E1B38] text-cyan-300 border border-cyan-400/50'
+                  : 'bg-slate-800 text-slate-400'
+              }`}
+            >
+              {isStreaming ? 'Stream Active' : 'Standby'}
+            </span>
+          </div>
+          <p className="text-xs text-slate-400 font-normal mt-0.5">
+            Active LoRa frame packet demodulation and segment reconstruction
           </p>
         </div>
 
-        <div className="flex items-center gap-4 flex-wrap text-xs font-mono">
-          {/* Status Badge */}
-          <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-semibold shadow-sm shadow-emerald-950">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>
-              {isMock ? 'SIMULATION' : isReplay ? 'MISSION REPLAY' : connected ? 'LIVE' : 'OFFLINE'}
+        <div className="flex items-center gap-3 flex-wrap text-xs">
+          {/* Hardware Connection Badge */}
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#070D1A] border border-[#1E2E52] text-[11px]">
+            <span className={`w-1.5 h-1.5 rounded-full ${isMock ? 'bg-cyan-400' : isReplay ? 'bg-amber-400' : connected ? 'bg-emerald-400' : 'bg-rose-500'}`} />
+            <span className="text-slate-300 font-semibold uppercase tracking-wider">
+              {isMock ? 'Simulation' : isReplay ? 'Mission Replay' : connected ? 'Live Hardware' : 'Offline'}
             </span>
           </div>
 
-          <div className="text-slate-300 font-medium hidden md:block">
-            {revNum === null ? 'Revolution —' : `Revolution #${revNum}`}
+          <div className="text-slate-400 text-xs hidden md:block px-2.5 py-1 bg-[#070D1A] border border-[#131E35] rounded font-mono tabular-nums">
+            {revStatus?.revolution ? `Rev #${revStatus.revolution.revolution_num}` : 'Rev —'}
           </div>
 
-          <div className="text-cyan-300 font-bold bg-slate-900/60 px-2.5 py-1 rounded border border-slate-800">
+          <div className="text-cyan-300 font-semibold bg-[#070D1A] px-2.5 py-1 rounded border border-[#131E35] font-mono tabular-nums">
             {utcTime || '--:--:-- UTC'}
           </div>
         </div>
       </div>
 
-      {/* Main Grid: Left Column & Right Column */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
-        {/* Left Column: Active Image & Signal Metrics */}
-        <div className="xl:col-span-5 space-y-5">
-          <ActiveImageCard image={activeImage} />
-          <SignalMetricsCard
-            rssiOverride={activeImage?.rssi}
-            snrOverride={activeImage?.snr}
-            packetsReceived={activeImage?.segments_confirmed ?? null}
-            missingCount={missingSegments.length}
-          />
+      {/* Main Grid: Left Primary Card + Right Sidebar Panels */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        {/* Left Column: Active Image Inspection & 40-Segment Reconstruction (7 cols) */}
+        <div className="lg:col-span-7 space-y-4">
+          <ActiveImageCard activeImage={activeImage} />
+          <SegmentMapCard activeImage={activeImage} missingSegments={missingSegments} />
         </div>
 
-        {/* Right Column: Transmission Progress, Segment Map, Retrans Alert, Upcoming Queue */}
-        <div className="xl:col-span-7 space-y-5">
-          <TransmissionProgressCard
-            image={activeImage}
-            missingCount={missingSegments.length}
-          />
-
-          {activeImage && totalSegs > 0 ? (
-            <SegmentMapCard currentSegment={currentSeg} totalSegments={totalSegs} missingSegments={missingSegments} />
-          ) : (
-            <div className="bg-[#0B132B]/80 rounded-xl border border-cyan-900/30 p-8 text-center text-xs font-mono text-slate-500">NO ACTIVE DOWNLINK</div>
-          )}
-
+        {/* Right Column: Telemetry Gauges, Progress, ARQ, & Upcoming Queue (5 cols) */}
+        <div className="lg:col-span-5 space-y-4">
+          <TransmissionProgressCard activeImage={activeImage} />
+          <SignalMetricsCard signalData={signalData} />
           <RetransmissionAlertCard
             missingSegments={missingSegments}
             status={activeRetrans?.status}
           />
-
           <QueueAndWindowCard
-            queue={queue}
+            queue={queue.length > 0 ? queue : queuedImages}
             activeImageId={activeImage?.id}
             revolution={revStatus?.revolution ?? null}
-            timeRemaining={revStatus?.time_remaining ?? null}
+            timeRemaining={timeRemaining}
           />
         </div>
       </div>

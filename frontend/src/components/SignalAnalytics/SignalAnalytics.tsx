@@ -23,7 +23,6 @@ export function SignalAnalytics() {
   const [timeRange, setTimeRange] = useState<TimeRange>('LIVE');
   const { connected, mode } = useConnection();
 
-  // Convert timeRange string to hours for API / data query
   const hoursMap: Record<TimeRange, number> = {
     LIVE: 1,
     '1H': 1,
@@ -34,7 +33,6 @@ export function SignalAnalytics() {
 
   const hours = hoursMap[timeRange] || 1;
 
-  // Domain Hooks
   const { data: signalData, loading: signalLoading } = useSignalQuality(undefined, hours);
   const { revolutions } = useRevolutions({ limit: 10 });
   const { status: revStatus } = useRevolutionStatus();
@@ -47,25 +45,25 @@ export function SignalAnalytics() {
   const activeThroughput = transmittingImages[0]?.throughput_bps ?? null;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 pb-6">
       {/* 1. Header with UTC clock & connection state */}
       <SignalAnalyticsHeader />
 
-      {/* 2. Top Controls Bar (Time Range Filter + Status Notification) */}
+      {/* 2. Top Controls Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <TimeRangeSelector selected={timeRange} onChange={setTimeRange} />
 
         {isOffline && (
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-rose-950/60 border border-rose-500/40 text-rose-300 text-xs font-mono">
-            <WifiOff className="w-4 h-4 text-rose-400 animate-pulse" />
-            <span>LIVE HARDWARE OFFLINE — NO LIVE TELEMETRY</span>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#180A12] border border-rose-500/40 text-rose-300 text-xs">
+            <WifiOff className="w-3.5 h-3.5 text-rose-400" />
+            <span>Hardware Offline — No Live Telemetry</span>
           </div>
         )}
 
         {!isOffline && timeRange === 'LIVE' && (
-          <div className="flex items-center gap-2 text-xs font-mono text-cyan-400">
-            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-            <span>STREAMING REAL-TIME RF TELEMETRY</span>
+          <div className="flex items-center gap-1.5 text-xs text-cyan-400 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+            <span>Streaming real-time RF telemetry</span>
           </div>
         )}
       </div>
@@ -78,9 +76,9 @@ export function SignalAnalytics() {
       />
 
       {/* 4. Charts + Link Health Summary Grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         {/* Left 2 Columns: RSSI and SNR Time-Series Charts */}
-        <div className="xl:col-span-2 space-y-6 min-w-0">
+        <div className="xl:col-span-2 space-y-4 min-w-0">
           <RssiChartCard
             telemetry={telemetryPoints}
             loading={signalLoading && telemetryPoints.length === 0}
@@ -109,7 +107,7 @@ export function SignalAnalytics() {
         activeThroughput={activeThroughput}
       />
 
-      {/* 6. Revolution Signal Heatmap (High-priority F4 Feature) */}
+      {/* 6. Revolution Signal Heatmap */}
       <RevolutionSignalHeatmap
         revolutions={revolutions}
         revolutionStatus={revStatus}

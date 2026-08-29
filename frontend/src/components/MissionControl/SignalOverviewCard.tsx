@@ -1,87 +1,121 @@
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
-import { useSignalQuality } from '../../hooks/useTelemetry';
+import type { SignalQuality } from '../../types';
+import { ArrowUpRight, Signal } from 'lucide-react';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from 'recharts';
+import { useMemo } from 'react';
 
-export function SignalOverviewCard() {
-  const { data: signalData } = useSignalQuality(undefined, 1);
+interface SignalOverviewCardProps {
+  signalData: SignalQuality | null;
+  onNavigate?: () => void;
+}
 
-  // Format telemetry points for the chart
-  const points = signalData?.telemetry || [];
-  const chartData = points.filter((t) => t.rssi !== null).map((t) => {
-    const time = new Date(t.timestamp).toLocaleTimeString('en-GB', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    return {
-      time,
-      rssi: t.rssi,
-    };
-  });
+export function SignalOverviewCard({
+  signalData,
+  onNavigate,
+}: SignalOverviewCardProps) {
+  const telemetry = signalData?.telemetry;
 
-  // Fallback points if empty
-  const displayData = chartData.slice(-15);
+  // Format recent 12 points for mini sparkline/area
+  const chartData = useMemo(() => (telemetry || [])
+    .slice(0, 15)
+    .reverse()
+    .map((t) => ({
+      time: new Date(t.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      rssi: t.rssi ?? -110,
+    })), [telemetry]);
+
+  const currentRssi = signalData?.stats?.rssi?.current ?? telemetry?.[0]?.rssi ?? null;
+  const currentSnr = signalData?.stats?.snr?.current ?? telemetry?.[0]?.snr ?? null;
 
   return (
-    <div className="bg-[#0B132B]/80 backdrop-blur-md rounded-xl border border-cyan-900/30 p-5 flex flex-col justify-between hover:border-cyan-500/40 transition-colors shadow-lg shadow-black/40 h-full min-h-[220px]">
-      <div className="flex items-center justify-between mb-2">
-        <div className="text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
-          Signal Overview <span className="text-cyan-400/80 font-normal">(Live)</span>
+    <div className="bg-[#080E1E] rounded-md border border-[#131E35] p-4 flex flex-col justify-between h-full">
+      <div>
+        {/* Header */}
+        <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#131E35]">
+          <div className="flex items-center gap-2">
+            <Signal className="w-3.5 h-3.5 text-cyan-400" />
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-white">
+              Carrier Signal Health
+            </h3>
+          </div>
+
+          {onNavigate && (
+            <button
+              type="button"
+              onClick={onNavigate}
+              className="text-slate-400 hover:text-cyan-300 transition-colors p-0.5"
+              title="View full Signal Analytics"
+              aria-label="View full Signal Analytics"
+            >
+              <ArrowUpRight className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
-        <div className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-[10px] font-mono text-emerald-400">TELEMETRY</span>
+
+        {/* Real-time Values Strip */}
+        <div className="flex items-center justify-between py-1">
+          <div>
+            <div className="text-[9px] uppercase tracking-wide text-slate-500">Live RSSI</div>
+            <div className="text-lg font-bold font-mono tabular-nums text-white">
+              {currentRssi !== null ? `${currentRssi} dBm` : '—'}
+            </div>
+          </div>
+
+          <div className="text-right">
+            <div className="text-[9px] uppercase tracking-wide text-slate-500">Live SNR</div>
+            <div className="text-lg font-bold font-mono tabular-nums text-emerald-400">
+              {currentSnr !== null ? `${currentSnr.toFixed(1)} dB` : '—'}
+            </div>
+          </div>
+        </div>
+
+        {/* Mini Chart */}
+        <div className="w-full h-24 mt-1">
+          {chartData.length === 0 ? (
+            <div className="h-full flex items-center justify-center text-[10px] text-slate-500 font-mono">
+              Awaiting telemetry...
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 5, right: 0, left: -25, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="signalMiniGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0.0} />
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="time" hide />
+                <YAxis domain={[-120, -50]} hide />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#070D1A',
+                    borderColor: '#1E2E52',
+                    borderRadius: '0.25rem',
+                    fontSize: '10px',
+                    fontFamily: 'monospace',
+                    color: '#fff',
+                  }}
+                  formatter={(val: number) => [`${val} dBm`, 'RSSI']}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="rssi"
+                  stroke="#0ea5e9"
+                  strokeWidth={1.5}
+                  fill="url(#signalMiniGrad)"
+                  isAnimationActive={false}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </div>
 
-      <div className="w-full h-36 mt-1">
-        {displayData.length === 0 ? <div className="w-full h-full flex items-center justify-center text-xs font-mono text-slate-500">NO TELEMETRY</div> : <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={displayData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
-            <defs>
-              <linearGradient id="rssiGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.4} />
-                <stop offset="95%" stopColor="#06b6d4" stopOpacity={0.0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-            <XAxis
-              dataKey="time"
-              stroke="#64748b"
-              fontSize={10}
-              tickLine={false}
-              axisLine={{ stroke: '#1e293b' }}
-            />
-            <YAxis
-              domain={[-120, -40]}
-              ticks={[-120, -100, -80, -60, -40]}
-              stroke="#64748b"
-              fontSize={9}
-              tickLine={false}
-              axisLine={{ stroke: '#1e293b' }}
-            />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: '#0B132B',
-                borderColor: '#0284c7',
-                borderRadius: '0.5rem',
-                fontSize: '11px',
-                color: '#fff',
-              }}
-              formatter={(val: number) => [`${val} dBm`, 'RSSI']}
-            />
-            <Area
-              type="monotone"
-              dataKey="rssi"
-              stroke="#06b6d4"
-              strokeWidth={2}
-              fillOpacity={1}
-              fill="url(#rssiGrad)"
-            />
-          </AreaChart>
-        </ResponsiveContainer>}
+      {/* Footer */}
+      <div className="pt-2 mt-1 border-t border-[#131E35] flex items-center justify-between text-[11px]">
+        <span className="text-slate-400">LoRa RF Link</span>
+        <span className="text-cyan-300 font-mono tabular-nums">
+          433.0 MHz Carrier
+        </span>
       </div>
     </div>
   );

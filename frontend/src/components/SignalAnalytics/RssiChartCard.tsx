@@ -44,20 +44,20 @@ export function RssiChartCard({ telemetry, loading }: RssiChartCardProps) {
       const val = payload[0].value;
       const data = payload[0].payload;
       return (
-        <div className="bg-[#070D1C] border border-cyan-500/40 rounded-lg p-2.5 shadow-xl font-mono text-xs z-50">
-          <div className="text-[10px] text-slate-400 border-b border-slate-800 pb-1 mb-1.5 flex items-center justify-between gap-4">
+        <div className="bg-[#070D1A] border border-[#1E2E52] rounded p-2 shadow-xl text-xs z-50">
+          <div className="text-[10px] font-mono text-slate-400 border-b border-[#131E35] pb-1 mb-1 flex items-center justify-between gap-3">
             <span>{label}</span>
-            <span className="px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-300 text-[9px] border border-cyan-800/40">
+            <span className="px-1 py-0.2 rounded bg-[#0D1830] text-cyan-300 text-[9px] border border-cyan-800/40">
               {data.packet_type}
             </span>
           </div>
-          <div className="flex items-center justify-between gap-4">
-            <span className="text-slate-300">RSSI:</span>
-            <span className={cn('font-bold', getSignalQualityClass(val))}>{val} dBm</span>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-slate-400">RSSI:</span>
+            <span className={cn('font-bold font-mono tabular-nums', getSignalQualityClass(val))}>{val} dBm</span>
           </div>
-          <div className="flex items-center justify-between gap-4 mt-0.5">
-            <span className="text-slate-400 text-[10px]">Status:</span>
-            <span className="text-slate-200 text-[10px] uppercase">{getSignalQualityLabel(val)}</span>
+          <div className="flex items-center justify-between gap-3 mt-0.5">
+            <span className="text-slate-500 text-[10px]">Status:</span>
+            <span className="text-slate-300 text-[10px] uppercase font-semibold">{getSignalQualityLabel(val)}</span>
           </div>
         </div>
       );
@@ -66,110 +66,94 @@ export function RssiChartCard({ telemetry, loading }: RssiChartCardProps) {
   };
 
   return (
-    <div className="bg-[#0B132B]/85 backdrop-blur-md rounded-xl border border-cyan-900/30 p-5 flex flex-col justify-between hover:border-cyan-500/40 transition-colors shadow-lg shadow-black/40 h-full">
+    <div className="bg-[#080E1E] rounded-md border border-[#131E35] p-4 flex flex-col justify-between h-full">
       {/* Chart Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 pb-2 mb-2 border-b border-[#131E35]">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 bg-cyan-500/10 border border-cyan-500/30 rounded-lg text-cyan-400">
-            <Signal className="w-4 h-4" />
-          </div>
-          <div>
-            <h3 className="font-space font-bold text-sm text-white flex items-center gap-2">
-              RSSI TELEMETRY (dBm)
-              <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded bg-slate-900 text-cyan-400 border border-cyan-900/40">
-                LORA RF
-              </span>
-            </h3>
-            <p className="text-[11px] font-mono text-slate-400">
-              Received Signal Strength Indicator over contact timeline
-            </p>
-          </div>
+          <Signal className="w-3.5 h-3.5 text-cyan-400" />
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-white">
+            Carrier RSSI Spectrum (dBm)
+          </h3>
         </div>
 
         {/* Live Value & Reference Range Badges */}
-        <div className="flex items-center gap-2 font-mono">
-          <div className="text-right">
-            <div className="text-[10px] text-slate-400">CURRENT</div>
-            <div className={cn('text-sm font-black', getSignalQualityClass(latestRssi))}>
+        <div className="flex items-center gap-2 text-xs">
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] text-slate-400 uppercase">Current:</span>
+            <span className={cn('text-xs font-bold font-mono tabular-nums', getSignalQualityClass(latestRssi))}>
               {latestRssi === null ? '—' : `${latestRssi} dBm`}
-            </div>
+            </span>
           </div>
-          <div className="h-6 w-[1px] bg-slate-800" />
-          <div className="flex items-center gap-1.5 text-[10px]">
-            <span className="flex items-center gap-1 text-emerald-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> &gt;-70 Strong
-            </span>
-            <span className="flex items-center gap-1 text-cyan-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" /> &gt;-85 Good
-            </span>
-            <span className="flex items-center gap-1 text-amber-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" /> &gt;-100 Fair
-            </span>
+          <div className="h-4 w-[1px] bg-[#131E35]" />
+          <div className="hidden sm:flex items-center gap-2 text-[10px] font-mono">
+            <span className="text-emerald-400">&gt;-70 Strong</span>
+            <span className="text-cyan-400">&gt;-85 Good</span>
+            <span className="text-amber-400">&gt;-100 Fair</span>
           </div>
         </div>
       </div>
 
       {/* Chart Canvas */}
-      <div className="w-full h-64 mt-2">
+      <div className="w-full h-56 mt-1">
         {loading && chartData.length === 0 ? (
-          <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 font-mono text-xs gap-2">
-            <Radio className="w-6 h-6 animate-pulse text-cyan-400" />
-            <span>ACQUIRING RF TELEMETRY STREAM...</span>
+          <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 text-xs gap-1.5 font-mono">
+            <Radio className="w-5 h-5 animate-pulse text-cyan-400" />
+            <span>Acquiring RF telemetry stream...</span>
           </div>
         ) : chartData.length === 0 ? (
-          <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 font-mono text-xs gap-2">
-            <Signal className="w-6 h-6 text-slate-600" />
-            <span>NO TELEMETRY AVAILABLE</span>
+          <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 text-xs gap-1.5">
+            <Signal className="w-5 h-5 text-slate-600" />
+            <span>No telemetry available</span>
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="rssiAreaGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#06b6d4" stopOpacity={0.0} />
+                  <stop offset="5%" stopColor="#0ea5e9" stopOpacity="0.3" />
+                  <stop offset="95%" stopColor="#0ea5e9" stopOpacity="0.0" />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+              <CartesianGrid strokeDasharray="2 2" stroke="#131E35" vertical={false} />
               <XAxis
                 dataKey="time"
                 stroke="#64748b"
-                fontSize={10}
-                fontFamily="JetBrains Mono"
+                fontSize={9}
+                fontFamily="Cascadia Mono, Consolas, monospace"
                 tickLine={false}
-                axisLine={{ stroke: '#1e293b' }}
+                axisLine={{ stroke: '#131E35' }}
                 interval="preserveStartEnd"
               />
               <YAxis
                 domain={[-120, -40]}
                 ticks={[-120, -100, -85, -70, -40]}
                 stroke="#64748b"
-                fontSize={10}
-                fontFamily="JetBrains Mono"
+                fontSize={9}
+                fontFamily="Cascadia Mono, Consolas, monospace"
                 tickLine={false}
-                axisLine={{ stroke: '#1e293b' }}
+                axisLine={{ stroke: '#131E35' }}
               />
               <Tooltip content={<CustomTooltip />} />
               {/* Threshold reference lines */}
               <ReferenceLine
                 y={-70}
                 stroke="#10b981"
-                strokeDasharray="3 3"
-                strokeOpacity={0.4}
-                label={{ value: 'STRONG (-70)', position: 'insideTopRight', fill: '#10b981', fontSize: 9, opacity: 0.6 }}
+                strokeDasharray="2 2"
+                strokeOpacity={0.5}
+                label={{ value: 'STRONG (-70)', position: 'insideTopRight', fill: '#10b981', fontSize: 8, opacity: 0.7 }}
               />
               <ReferenceLine
                 y={-100}
                 stroke="#f59e0b"
-                strokeDasharray="3 3"
-                strokeOpacity={0.3}
-                label={{ value: 'FAIR (-100)', position: 'insideTopRight', fill: '#f59e0b', fontSize: 9, opacity: 0.6 }}
+                strokeDasharray="2 2"
+                strokeOpacity={0.4}
+                label={{ value: 'FAIR (-100)', position: 'insideTopRight', fill: '#f59e0b', fontSize: 8, opacity: 0.7 }}
               />
               <Area
                 type="monotone"
                 dataKey="rssi"
-                stroke="#06b6d4"
-                strokeWidth={2.2}
+                stroke="#0ea5e9"
+                strokeWidth={1.5}
                 fillOpacity={1}
                 fill="url(#rssiAreaGradient)"
                 isAnimationActive={false}

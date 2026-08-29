@@ -39,26 +39,26 @@ export function ImageDetailModal({
     image.status === 'transmitting' || image.status === 'queued';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in">
-      <div role="dialog" aria-modal="true" aria-labelledby="image-detail-title" className="bg-[#070D1C] border border-cyan-500/40 rounded-2xl w-full max-w-5xl max-h-[92vh] overflow-y-auto shadow-2xl shadow-cyan-950/60 flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-sm animate-fade-in">
+      <div role="dialog" aria-modal="true" aria-labelledby="image-detail-title" className="bg-[#070D1A] border border-[#1E2E52] rounded-md w-full max-w-4xl max-h-[90vh] overflow-y-auto flex flex-col shadow-2xl">
         {/* Modal Header */}
-        <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between sticky top-0 bg-[#070D1C]/95 backdrop-blur-md z-10">
-          <div className="flex items-center gap-3">
-            <div id="image-detail-title" className="text-xl font-bold font-space text-white tracking-wide">
+        <div className="p-3.5 sm:p-4 border-b border-[#131E35] flex items-center justify-between sticky top-0 bg-[#070D1A]/95 backdrop-blur-sm z-10">
+          <div className="flex items-center gap-2.5">
+            <div id="image-detail-title" className="font-mono text-base font-bold text-white tracking-wide">
               {image.id}
             </div>
             <span
-              className={`px-2.5 py-0.5 rounded text-xs font-mono font-bold ${
+              className={`px-2 py-0.2 rounded text-[10px] font-semibold uppercase tracking-wider ${
                 isClear
-                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                  ? 'bg-[#062D24] text-emerald-400 border border-emerald-500/30'
                   : isCloudy
-                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/40'
-                  : 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
+                  ? 'bg-[#0C2548] text-blue-400 border border-blue-500/30'
+                  : 'bg-[#2D0A14] text-rose-400 border border-rose-500/30'
               }`}
             >
               {image.classification || 'CLEAR'}
             </span>
-            <span className="text-xs font-mono text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/30">
+            <span className="text-[10px] font-mono text-slate-300 bg-[#050810] px-1.5 py-0.2 rounded border border-[#131E35]">
               Priority P{image.priority}
             </span>
           </div>
@@ -66,133 +66,131 @@ export function ImageDetailModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+            className="p-1 rounded bg-[#050810] hover:bg-[#0E1B38] text-slate-400 hover:text-white border border-[#131E35] transition-colors"
             aria-label="Close image details"
             title="Close image details"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="p-5 space-y-6">
+        <div className="p-4 space-y-4">
           {/* Main Visualizer */}
-          <div className="relative rounded-xl border border-cyan-500/30 bg-slate-950 aspect-[16/9] overflow-hidden flex items-center justify-center shadow-inner group">
+          <div className="relative rounded bg-[#050810] border border-[#131E35] aspect-[16/9] overflow-hidden flex items-center justify-center">
             <div
-              className="w-full h-full flex items-center justify-center transition-transform duration-200"
+              className="w-full h-full flex items-center justify-center transition-transform duration-150"
               style={{ transform: `scale(${zoom})` }}
             >
               <svg viewBox="0 0 480 270" className="w-full h-full">
                 <defs>
                   <radialGradient id={`modal-glow-${image.id}`} cx="50%" cy="50%" r="50%">
-                    <stop offset="0%" stopColor={isClear ? '#0284c7' : isCloudy ? '#0369a1' : '#1e293b'} stopOpacity="0.95" />
-                    <stop offset="70%" stopColor="#0369a1" stopOpacity="0.4" />
-                    <stop offset="100%" stopColor="#082f49" stopOpacity="0.1" />
+                    <stop offset="0%" stopColor={isClear ? '#0284c7' : isCloudy ? '#0369a1' : '#1e293b'} stopOpacity="0.8" />
+                    <stop offset="70%" stopColor="#0369a1" stopOpacity="0.3" />
+                    <stop offset="100%" stopColor="#082f49" stopOpacity="0.05" />
                   </radialGradient>
                 </defs>
-                <circle cx="240" cy="135" r="105" fill={`url(#modal-glow-${image.id})`} />
-                {/* Detailed geographic landmasses */}
-                <path d="M180,95 Q220,70 260,110 T310,90 T330,150 T280,195 T200,180 Z" fill="#059669" opacity="0.7" />
-                <path d="M150,125 Q180,160 210,140 T230,200 T180,215 Z" fill="#10b981" opacity="0.6" />
+                <circle cx="240" cy="135" r="95" fill={`url(#modal-glow-${image.id})`} />
+                <path d="M180,95 Q220,70 260,110 T310,90 T330,150 T280,195 T200,180 Z" fill="#047857" opacity="0.6" />
+                <path d="M150,125 Q180,160 210,140 T230,200 T180,215 Z" fill="#059669" opacity="0.5" />
                 {isCloudy && (
-                  <path d="M190,115 Q240,100 290,130 T255,160 Z" fill="#ffffff" opacity="0.5" />
+                  <path d="M190,115 Q240,100 290,130 T255,160 Z" fill="#ffffff" opacity="0.4" />
                 )}
-                {/* Crosshairs & telemetry reticles */}
-                <line x1="30" y1="135" x2="450" y2="135" stroke="#38bdf8" strokeWidth="0.75" strokeDasharray="4 4" opacity="0.4" />
-                <line x1="240" y1="20" x2="240" y2="250" stroke="#38bdf8" strokeWidth="0.75" strokeDasharray="4 4" opacity="0.4" />
-                <circle cx="240" cy="135" r="60" stroke="#38bdf8" strokeWidth="0.5" strokeDasharray="3 3" fill="none" opacity="0.3" />
+                <line x1="30" y1="135" x2="450" y2="135" stroke="#0ea5e9" strokeWidth="0.5" strokeDasharray="3 3" opacity="0.3" />
+                <line x1="240" y1="20" x2="240" y2="250" stroke="#0ea5e9" strokeWidth="0.5" strokeDasharray="3 3" opacity="0.3" />
+                <circle cx="240" cy="135" r="55" stroke="#0ea5e9" strokeWidth="0.5" strokeDasharray="2 2" fill="none" opacity="0.2" />
               </svg>
             </div>
 
             {/* Zoom Controls Overlay */}
-            <div className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-black/70 backdrop-blur-md p-1.5 rounded-lg border border-slate-700">
+            <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1 bg-[#050810]/90 p-1 rounded border border-[#131E35]">
               <button
                 type="button"
                 onClick={() => setZoom((z) => Math.max(0.75, z - 0.25))}
-                className="p-1 rounded hover:bg-slate-800 text-slate-300 hover:text-white"
+                className="p-1 rounded hover:bg-[#0E1B38] text-slate-300 hover:text-white"
                 title="Zoom Out"
                 aria-label="Zoom out"
               >
-                <ZoomOut className="w-4 h-4" />
+                <ZoomOut className="w-3.5 h-3.5" />
               </button>
-              <span className="text-xs font-mono text-cyan-300 w-12 text-center font-bold">
+              <span className="text-[11px] font-mono text-cyan-300 w-10 text-center font-bold tabular-nums">
                 {Math.round(zoom * 100)}%
               </span>
               <button
                 type="button"
                 onClick={() => setZoom((z) => Math.min(2.5, z + 0.25))}
-                className="p-1 rounded hover:bg-slate-800 text-slate-300 hover:text-white"
+                className="p-1 rounded hover:bg-[#0E1B38] text-slate-300 hover:text-white"
                 title="Zoom In"
                 aria-label="Zoom in"
               >
-                <ZoomIn className="w-4 h-4" />
+                <ZoomIn className="w-3.5 h-3.5" />
               </button>
               <button
                 type="button"
                 onClick={() => setZoom(1)}
-                className="p-1 rounded hover:bg-slate-800 text-slate-300 hover:text-white ml-1"
+                className="p-1 rounded hover:bg-[#0E1B38] text-slate-300 hover:text-white"
                 title="Reset Zoom"
                 aria-label="Reset zoom"
               >
-                <RotateCcw className="w-4 h-4" />
+                <RotateCcw className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
 
           {/* Metadata Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
-            <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800">
-              <div className="text-[10px] text-slate-400 uppercase">Mission ID</div>
-              <div className="font-bold text-white mt-1">{image.mission_id}</div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+            <div className="p-2.5 rounded bg-[#080E1E] border border-[#131E35]">
+              <div className="text-[9px] text-slate-500 uppercase tracking-wide">Mission ID</div>
+              <div className="font-semibold text-white mt-0.5">{image.mission_id}</div>
             </div>
-            <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800">
-              <div className="text-[10px] text-slate-400 uppercase">AI Confidence</div>
-              <div className="font-bold text-emerald-400 mt-1">{confidence === null ? '—' : `${confidence}%`}</div>
+            <div className="p-2.5 rounded bg-[#080E1E] border border-[#131E35]">
+              <div className="text-[9px] text-slate-500 uppercase tracking-wide">AI Confidence</div>
+              <div className="font-bold font-mono text-emerald-400 mt-0.5 tabular-nums">{confidence === null ? '—' : `${confidence}%`}</div>
             </div>
-            <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800">
-              <div className="text-[10px] text-slate-400 uppercase">Edge AI Decision</div>
-              <div className="font-bold text-cyan-300 mt-1 uppercase">{image.action || 'KEEP'}</div>
+            <div className="p-2.5 rounded bg-[#080E1E] border border-[#131E35]">
+              <div className="text-[9px] text-slate-500 uppercase tracking-wide">Edge Decision</div>
+              <div className="font-semibold text-cyan-300 mt-0.5 uppercase">{image.action || 'KEEP'}</div>
             </div>
-            <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800">
-              <div className="text-[10px] text-slate-400 uppercase">JPEG Quality</div>
-              <div className="font-bold text-white mt-1">{image.jpeg_quality === null ? '—' : `Q${image.jpeg_quality}`}</div>
+            <div className="p-2.5 rounded bg-[#080E1E] border border-[#131E35]">
+              <div className="text-[9px] text-slate-500 uppercase tracking-wide">JPEG Quality</div>
+              <div className="font-mono font-semibold text-white mt-0.5 tabular-nums">{image.jpeg_quality === null ? '—' : `Q${image.jpeg_quality}`}</div>
             </div>
-            <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800">
-              <div className="text-[10px] text-slate-400 uppercase">Total Segments</div>
-              <div className="font-bold text-white mt-1">{image.total_segments ?? '—'}</div>
+            <div className="p-2.5 rounded bg-[#080E1E] border border-[#131E35]">
+              <div className="text-[9px] text-slate-500 uppercase tracking-wide">Total Segments</div>
+              <div className="font-mono font-semibold text-white mt-0.5 tabular-nums">{image.total_segments ?? '—'}</div>
             </div>
-            <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800">
-              <div className="text-[10px] text-slate-400 uppercase">Confirmed</div>
-              <div className="font-bold text-cyan-400 mt-1">{image.segments_confirmed} segs</div>
+            <div className="p-2.5 rounded bg-[#080E1E] border border-[#131E35]">
+              <div className="text-[9px] text-slate-500 uppercase tracking-wide">Confirmed</div>
+              <div className="font-mono font-semibold text-cyan-400 mt-0.5 tabular-nums">{image.segments_confirmed} segs</div>
             </div>
-            <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800">
-              <div className="text-[10px] text-slate-400 uppercase">ML Latency</div>
-              <div className="font-bold text-white mt-1">{image.latency_ms === null ? '—' : `${image.latency_ms} ms`}</div>
+            <div className="p-2.5 rounded bg-[#080E1E] border border-[#131E35]">
+              <div className="text-[9px] text-slate-500 uppercase tracking-wide">ML Latency</div>
+              <div className="font-mono font-semibold text-white mt-0.5 tabular-nums">{image.latency_ms === null ? '—' : `${image.latency_ms} ms`}</div>
             </div>
-            <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800">
-              <div className="text-[10px] text-slate-400 uppercase">Captured Time</div>
-              <div className="font-bold text-white mt-1 truncate">{capturedTime}</div>
+            <div className="p-2.5 rounded bg-[#080E1E] border border-[#131E35]">
+              <div className="text-[9px] text-slate-500 uppercase tracking-wide">Captured Time</div>
+              <div className="font-mono text-slate-300 mt-0.5 truncate text-[11px] tabular-nums">{capturedTime}</div>
             </div>
           </div>
 
           {/* Class Probability Breakdown */}
-          <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2.5">
-            <div className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider">
-              Edge-AI Class Probabilities
+          <div className="p-3 rounded bg-[#080E1E] border border-[#131E35] space-y-2">
+            <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+              Edge-AI Inference Probabilities
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {probabilities ? (['CLEAR', 'CLOUDY', 'NOT_VISIBLE'] as const).map((cls) => {
                 const prob = probabilities[cls] ?? 0;
                 const probPct = (prob * 100).toFixed(1);
                 return (
-                  <div key={cls} className="space-y-1">
-                    <div className="flex items-center justify-between text-xs font-mono">
-                      <span className="text-slate-400">{cls}</span>
-                      <span className="font-bold text-white">{probPct}%</span>
+                  <div key={cls} className="space-y-0.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-slate-300 text-[11px]">{cls}</span>
+                      <span className="font-mono font-semibold text-white text-[11px] tabular-nums">{probPct}%</span>
                     </div>
-                    <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+                    <div className="h-1.5 bg-[#050810] border border-[#131E35] overflow-hidden">
                       <div
-                        className={`h-full rounded-full transition-all duration-500 ${
+                        className={`h-full transition-all duration-300 ${
                           cls === 'CLEAR'
                             ? 'bg-emerald-400'
                             : cls === 'CLOUDY'
@@ -204,13 +202,13 @@ export function ImageDetailModal({
                     </div>
                   </div>
                 );
-              }) : <div className="py-4 text-center text-xs font-mono text-slate-500">PROBABILITIES UNAVAILABLE</div>}
+              }) : <div className="py-2 text-center text-xs text-slate-500 font-mono">PROBABILITIES UNAVAILABLE</div>}
             </div>
           </div>
         </div>
 
         {/* Modal Footer Actions */}
-        <div className="p-4 sm:p-5 border-t border-slate-800 bg-[#070D1C]/95 backdrop-blur-md flex items-center justify-between gap-3 flex-wrap">
+        <div className="p-3 sm:p-3.5 border-t border-[#131E35] bg-[#070D1A]/95 flex items-center justify-between gap-2.5 flex-wrap">
           <button
             type="button"
             onClick={() => {
@@ -222,13 +220,13 @@ export function ImageDetailModal({
               a.click();
               URL.revokeObjectURL(url);
             }}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-medium transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-[#050810] hover:bg-[#0E1B38] text-slate-300 text-xs border border-[#131E35] transition-colors"
           >
-            <Download className="w-4 h-4" />
-            <span>Export Metadata JSON</span>
+            <Download className="w-3.5 h-3.5" />
+            <span>Export JSON</span>
           </button>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {isTransmittingOrQueued && onNavigateToTransmission && (
               <button
                 type="button"
@@ -236,17 +234,17 @@ export function ImageDetailModal({
                   onClose();
                   onNavigateToTransmission();
                 }}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-teal-600 to-cyan-500 hover:from-teal-500 hover:to-cyan-400 text-slate-950 font-bold text-xs font-mono shadow-md shadow-cyan-950 transition-all"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-[#0E1B38] text-cyan-300 border border-cyan-500/40 text-xs font-semibold transition-colors"
               >
-                <Radio className="w-4 h-4" />
-                <span>VIEW LIVE DOWNLINK</span>
+                <Radio className="w-3.5 h-3.5" />
+                <span>View Live Stream</span>
               </button>
             )}
 
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-white text-xs font-mono font-semibold transition-colors"
+              className="px-3.5 py-1.5 rounded bg-[#050810] hover:bg-[#0E1B38] text-white text-xs border border-[#131E35] transition-colors"
             >
               Close
             </button>

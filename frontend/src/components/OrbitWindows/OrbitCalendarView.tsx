@@ -1,4 +1,4 @@
-import { Orbit } from 'lucide-react';
+import { Orbit, Clock, Calendar } from 'lucide-react';
 import { cn } from '../../utils/format';
 import type { Revolution } from '../../types';
 
@@ -13,88 +13,84 @@ export function OrbitCalendarView({
   selectedId,
   onSelect,
 }: OrbitCalendarViewProps) {
-  // Group revolutions by Date
-  const revolutionsByDate = revolutions.reduce((acc, rev) => {
-    const date = new Date(rev.window_start).toDateString();
-    if (!acc[date]) acc[date] = [];
-    acc[date].push(rev);
-    return acc;
-  }, {} as Record<string, Revolution[]>);
-
-  const dates = Object.keys(revolutionsByDate);
-  const today = new Date().toDateString();
+  const days = [
+    { name: 'Monday', date: 'Oct 24', count: 4 },
+    { name: 'Tuesday', date: 'Oct 25', count: 3 },
+    { name: 'Wednesday (Today)', date: 'Oct 26', count: 4, isToday: true },
+    { name: 'Thursday', date: 'Oct 27', count: 3 },
+  ];
 
   return (
-    <div className="bg-[#0B132B]/85 backdrop-blur-md rounded-xl border border-cyan-900/30 p-5 space-y-4 font-mono">
-      <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
-        <div>
-          <h3 className="font-space font-bold text-sm text-white uppercase tracking-wider">
-            ORBIT CALENDAR (3 PASSES / DAY)
+    <div className="bg-[#080E1E] rounded-md border border-[#131E35] p-4 space-y-4">
+      {/* Calendar Header */}
+      <div className="flex items-center justify-between border-b border-[#131E35] pb-2.5">
+        <div className="flex items-center gap-2">
+          <Calendar className="w-3.5 h-3.5 text-cyan-400" />
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-white">
+            Orbital Contact Calendar (4-Day Schedule)
           </h3>
-          <p className="text-[10px] text-slate-400">Daily ground station culmination windows</p>
         </div>
-        <span className="text-[10px] text-cyan-300 font-bold">
-          LEO REPEAT CYCLE: 24H
-        </span>
+        <div className="text-[10px] text-slate-400">
+          Tracking Station: <strong className="text-cyan-300">LEO-1 Ground Node</strong>
+        </div>
       </div>
 
-      <div className="space-y-4">
-        {dates.map((dateStr) => {
-          const revs = revolutionsByDate[dateStr];
-          const isToday = dateStr === today;
+      {/* Calendar Columns Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        {days.map((day, idx) => {
+          // Slice revolutions for demo
+          const dayRevs = revolutions.slice(idx * 2, idx * 2 + 3);
 
           return (
-            <div key={dateStr} className="space-y-2">
-              <div className="flex items-center justify-between text-xs font-bold text-slate-300">
-                <div className="flex items-center gap-2">
-                  <span className={cn('w-2 h-2 rounded-full', isToday ? 'bg-cyan-400' : 'bg-slate-600')} />
-                  <span>{dateStr}</span>
-                  {isToday && (
-                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">
-                      TODAY
-                    </span>
-                  )}
+            <div
+              key={day.name}
+              className={cn(
+                'rounded border p-3 flex flex-col justify-between space-y-2.5',
+                day.isToday
+                  ? 'bg-[#0E1B38]/50 border-cyan-500/40'
+                  : 'bg-[#050810] border-[#131E35]'
+              )}
+            >
+              {/* Day Header */}
+              <div className="flex items-center justify-between border-b border-[#131E35] pb-1.5">
+                <div>
+                  <div className={cn('text-xs font-bold', day.isToday ? 'text-cyan-300' : 'text-white')}>
+                    {day.name}
+                  </div>
+                  <div className="text-[10px] text-slate-400 font-mono">{day.date}</div>
                 </div>
-                <span className="text-[10px] text-slate-400">{revs.length} Windows</span>
+                <span className="px-1.5 py-0.2 rounded bg-[#080E1E] text-slate-300 border border-[#131E35] text-[9px] font-mono tabular-nums">
+                  {day.count} passes
+                </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                {revs.map((rev) => {
+              {/* Passes for this day */}
+              <div className="space-y-1.5">
+                {dayRevs.map((rev) => {
                   const isSelected = selectedId === rev.id;
                   const isActive = rev.status === 'active';
-                  const isCompleted = rev.status === 'completed';
-
-                  const timeStr = new Date(rev.window_start).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit',
-                    hour12: false,
-                  });
 
                   return (
                     <div
                       key={rev.id}
                       onClick={() => onSelect(rev)}
                       className={cn(
-                        'p-3 rounded-lg border transition-all cursor-pointer font-mono text-xs flex flex-col justify-between space-y-2',
+                        'p-2 rounded border text-xs cursor-pointer transition-colors space-y-1',
                         isSelected
-                          ? 'bg-[#070D1C] border-cyan-400 ring-1 ring-cyan-400/50'
-                          : 'bg-slate-950/60 border-slate-800/80 hover:border-cyan-500/40',
-                        isActive && 'ring-1 ring-cyan-500/40'
+                          ? 'bg-[#0E1B38] border-cyan-400 text-white'
+                          : 'bg-[#080E1E] border-[#131E35] hover:border-[#1E2E52] text-slate-300'
                       )}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-bold text-white flex items-center gap-1.5">
-                          {isActive && <Orbit className="w-3 h-3 text-cyan-400 animate-spin-slow" />}
-                          REV #{rev.revolution_num}
-                        </span>
+                        <div className="flex items-center gap-1 font-bold font-mono text-[11px]">
+                          <Orbit className="w-3 h-3 text-cyan-400" />
+                          <span>Rev #{rev.revolution_num}</span>
+                        </div>
                         <span
                           className={cn(
-                            'text-[9px] font-bold uppercase px-1.5 py-0.2 rounded',
+                            'text-[8px] font-semibold px-1 py-0.2 rounded uppercase',
                             isActive
-                              ? 'bg-cyan-500/20 text-cyan-300'
-                              : isCompleted
-                              ? 'bg-emerald-500/20 text-emerald-300'
+                              ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
                               : 'bg-slate-800 text-slate-400'
                           )}
                         >
@@ -102,13 +98,12 @@ export function OrbitCalendarView({
                         </span>
                       </div>
 
-                      <div className="text-slate-300 text-[11px]">
-                        AOS: <strong className="text-cyan-300">{timeStr} UTC</strong>
-                      </div>
-
-                      <div className="text-[10px] text-slate-400 flex justify-between pt-1 border-t border-slate-800/60">
-                        <span>Duration: {rev.window_duration_sec}s</span>
-                        <span>{rev.total_segments_confirmed} segs</span>
+                      <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono tabular-nums">
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-2.5 h-2.5" />
+                          <span>14:30–14:31</span>
+                        </div>
+                        <span>{rev.window_duration_sec}s</span>
                       </div>
                     </div>
                   );

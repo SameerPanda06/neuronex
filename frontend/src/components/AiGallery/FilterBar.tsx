@@ -33,15 +33,15 @@ export function FilterBar({
 }: FilterBarProps) {
   const filterOptions: { id: ClassificationFilter; label: string; count: number }[] = [
     { id: 'ALL', label: 'All', count: counts.ALL },
-    { id: 'CLEAR', label: 'Clear', count: counts.CLEAR },
-    { id: 'CLOUDY', label: 'Cloudy', count: counts.CLOUDY },
+    { id: 'CLEAR', label: 'Clear (P1)', count: counts.CLEAR },
+    { id: 'CLOUDY', label: 'Cloudy (P2)', count: counts.CLOUDY },
     { id: 'NOT_VISIBLE', label: 'Not Visible', count: counts.NOT_VISIBLE },
   ];
 
   return (
-    <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 bg-[#0B132B]/60 p-3 rounded-xl border border-cyan-900/30 backdrop-blur-md">
+    <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 bg-[#080E1E] p-2.5 rounded-md border border-[#131E35]">
       {/* Classification Filter Tabs */}
-      <div className="flex items-center gap-1.5 flex-wrap overflow-x-auto pb-1 lg:pb-0">
+      <div className="flex items-center gap-1 flex-wrap overflow-x-auto pb-1 lg:pb-0">
         {filterOptions.map((opt) => {
           const isActive = activeFilter === opt.id;
           return (
@@ -49,16 +49,16 @@ export function FilterBar({
               key={opt.id}
               type="button"
               onClick={() => onFilterChange(opt.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-all flex items-center gap-1.5 ${
+              className={`px-2.5 py-1 rounded text-xs transition-colors flex items-center gap-1.5 ${
                 isActive
-                  ? 'bg-teal-500/20 text-cyan-300 border border-teal-500/40 shadow-sm font-bold'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 border border-transparent'
+                  ? 'bg-[#0E1B38] text-cyan-300 border border-cyan-500/40 font-semibold'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-[#050810] border border-transparent font-normal'
               }`}
             >
               <span>{opt.label}</span>
               <span
-                className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                  isActive ? 'bg-cyan-400/20 text-cyan-200' : 'bg-slate-800 text-slate-400'
+                className={`text-[10px] font-mono tabular-nums px-1 py-0.2 rounded ${
+                  isActive ? 'bg-cyan-950 text-cyan-200 border border-cyan-800/40' : 'bg-slate-900 text-slate-400'
                 }`}
               >
                 {opt.count}
@@ -69,41 +69,41 @@ export function FilterBar({
       </div>
 
       {/* Search, Sort, and View Controls */}
-      <div className="flex items-center gap-2.5 flex-wrap">
+      <div className="flex items-center gap-2 flex-wrap text-xs">
         {/* Search Input */}
-        <div className="relative flex-1 sm:w-56">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+        <div className="relative flex-1 sm:w-52">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400" />
           <input
             type="text"
-            placeholder="Search image ID..."
+            placeholder="Search frame ID..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 bg-slate-950/80 border border-slate-700/80 rounded-lg text-xs font-mono text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400"
+            className="w-full pl-7 pr-2.5 py-1 bg-[#050810] border border-[#131E35] rounded text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 font-mono"
           />
         </div>
 
         {/* Sort Dropdown */}
-        <div className="flex items-center gap-1 bg-slate-950/80 border border-slate-700/80 rounded-lg px-2 py-1">
-          <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
+        <div className="flex items-center gap-1 bg-[#050810] border border-[#131E35] rounded px-2 py-1">
+          <ArrowUpDown className="w-3 h-3 text-slate-400" />
           <select
             value={sortBy}
             onChange={(e) => onSortChange(e.target.value as SortOption)}
-            className="bg-transparent text-xs font-mono text-slate-200 focus:outline-none cursor-pointer pr-1"
+            className="bg-transparent text-xs text-slate-200 focus:outline-none cursor-pointer pr-1"
           >
-            <option value="priority" className="bg-slate-900 text-white">Priority</option>
-            <option value="confidence" className="bg-slate-900 text-white">Highest Confidence</option>
-            <option value="created_at" className="bg-slate-900 text-white">Most Recent</option>
-            <option value="oldest" className="bg-slate-900 text-white">Oldest</option>
+            <option value="priority" className="bg-[#080E1E] text-white">Priority</option>
+            <option value="confidence" className="bg-[#080E1E] text-white">Confidence</option>
+            <option value="created_at" className="bg-[#080E1E] text-white">Recent</option>
+            <option value="oldest" className="bg-[#080E1E] text-white">Oldest</option>
           </select>
         </div>
 
         {/* View Toggle */}
-        <div className="flex items-center bg-slate-950/80 border border-slate-700/80 rounded-lg p-0.5">
+        <div className="flex items-center bg-[#050810] border border-[#131E35] rounded p-0.5">
           <button
             type="button"
             onClick={() => onViewModeChange('grid')}
-            className={`p-1.5 rounded transition-colors ${
-              viewMode === 'grid' ? 'bg-cyan-500/20 text-cyan-300' : 'text-slate-400 hover:text-white'
+            className={`p-1 rounded transition-colors ${
+              viewMode === 'grid' ? 'bg-[#0E1B38] text-cyan-300 border border-cyan-500/30' : 'text-slate-400 hover:text-white'
             }`}
             title="Grid View"
             aria-label="Grid view"
@@ -114,8 +114,8 @@ export function FilterBar({
           <button
             type="button"
             onClick={() => onViewModeChange('list')}
-            className={`p-1.5 rounded transition-colors ${
-              viewMode === 'list' ? 'bg-cyan-500/20 text-cyan-300' : 'text-slate-400 hover:text-white'
+            className={`p-1 rounded transition-colors ${
+              viewMode === 'list' ? 'bg-[#0E1B38] text-cyan-300 border border-cyan-500/30' : 'text-slate-400 hover:text-white'
             }`}
             title="List View"
             aria-label="List view"
