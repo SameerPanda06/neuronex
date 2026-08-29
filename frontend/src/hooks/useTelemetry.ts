@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { dataSource } from '../data';
 import type { Telemetry, TelemetryHistory, SignalQuality, TelemetryUpdateEvent } from '../types';
+import { useResilientPolling } from './useResilientPolling';
 
 export function useLatestTelemetry() {
   const [data, setData] = useState<{ latest_overall: Telemetry | null; latest_per_image: Telemetry[] } | null>(null);
@@ -13,18 +14,16 @@ export function useLatestTelemetry() {
       const res = await dataSource.telemetry.getLatest();
       setData(res);
       setError(null);
+      return true;
     } catch {
       setError('Failed to fetch telemetry');
+      return false;
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    fetch();
-    const interval = setInterval(fetch, 5000); // Poll every 5s as fallback
-    return () => clearInterval(interval);
-  }, [fetch]);
+  useResilientPolling(fetch, 10_000);
 
   // Real-time updates via DataSource
   useEffect(() => {
@@ -89,18 +88,16 @@ export function useSignalQuality(imageId?: string, hours = 24) {
       const res = await dataSource.telemetry.getSignal({ image_id: imageId, hours });
       setData(res);
       setError(null);
+      return true;
     } catch {
       setError('Failed to fetch signal quality');
+      return false;
     } finally {
       setLoading(false);
     }
   }, [imageId, hours]);
 
-  useEffect(() => {
-    fetch();
-    const interval = setInterval(fetch, 10000); // Poll every 10s
-    return () => clearInterval(interval);
-  }, [fetch]);
+  useResilientPolling(fetch, 10_000);
 
   // Real-time updates via DataSource subscription
   useEffect(() => {
@@ -130,7 +127,7 @@ export function useSignalQuality(imageId?: string, hours = 24) {
                 min: Math.min(...rssiValues),
                 max: Math.max(...rssiValues),
                 avg: parseFloat((rssiValues.reduce((a, b) => a + b, 0) / rssiValues.length).toFixed(1)),
-                current: update.rssi ?? rssiValues[0] ?? -75,
+                current: update.rssi ?? rssiValues[0]!,
               }
             : prev?.stats?.rssi;
 
@@ -140,7 +137,7 @@ export function useSignalQuality(imageId?: string, hours = 24) {
                 min: Math.min(...snrValues),
                 max: Math.max(...snrValues),
                 avg: parseFloat((snrValues.reduce((a, b) => a + b, 0) / snrValues.length).toFixed(1)),
-                current: update.snr ?? snrValues[0] ?? 8.5,
+                current: update.snr ?? snrValues[0]!,
               }
             : prev?.stats?.snr;
 

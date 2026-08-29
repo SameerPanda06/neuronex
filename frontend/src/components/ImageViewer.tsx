@@ -165,7 +165,7 @@ export function ImageViewer({ imageId, onClose }: ImageViewerProps) {
               <div className="mt-6 p-4 bg-white/5 rounded-lg border border-white/10">
                 <h4 className="font-medium text-white mb-3">Class Probabilities</h4>
                 <div className="grid grid-cols-3 gap-4">
-                  {Object.entries(image.all_probabilities).map(([cls, prob]) => (
+                  {(Object.entries(image.all_probabilities) as [string, number][]).map(([cls, prob]) => (
                     <div key={cls} className="text-center">
                       <p className="text-xs text-neuronex-400 mb-1">{cls}</p>
                       <div className="h-2 bg-white/10 rounded-full overflow-hidden">

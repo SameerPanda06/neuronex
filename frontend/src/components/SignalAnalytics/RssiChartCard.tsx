@@ -23,20 +23,19 @@ export function RssiChartCard({ telemetry, loading }: RssiChartCardProps) {
   const chartData = telemetry
     .slice(0, 35)
     .reverse()
-    .map((t, idx) => {
-      const time = t.timestamp
-        ? new Date(t.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-        : `14:${20 + idx}:00`;
+    .filter((t) => t.rssi !== null)
+    .map((t) => {
+      const time = new Date(t.timestamp).toLocaleTimeString('en-GB', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', second: '2-digit' });
       return {
         time,
-        rssi: t.rssi ?? -72,
-        snr: t.snr ?? 8.5,
-        packet_type: t.packet_type || 'DATA',
-        segment: t.segment_num ? `#${t.segment_num}` : 'TX',
+        rssi: t.rssi,
+        snr: t.snr,
+        packet_type: t.packet_type,
+        segment: t.segment_num === null ? 'TX' : `#${t.segment_num}`,
       };
     });
 
-  const latestRssi = telemetry[0]?.rssi ?? -72;
+  const latestRssi = telemetry.find((point) => point.rssi !== null)?.rssi ?? null;
 
   // Custom technical tooltip
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -91,7 +90,7 @@ export function RssiChartCard({ telemetry, loading }: RssiChartCardProps) {
           <div className="text-right">
             <div className="text-[10px] text-slate-400">CURRENT</div>
             <div className={cn('text-sm font-black', getSignalQualityClass(latestRssi))}>
-              {latestRssi} dBm
+              {latestRssi === null ? '—' : `${latestRssi} dBm`}
             </div>
           </div>
           <div className="h-6 w-[1px] bg-slate-800" />

@@ -21,7 +21,7 @@ export function ContactWindowBar({
 
   const formatTime = (iso?: string | null) => {
     if (!iso) return '--:--:--';
-    return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+    return new Date(iso).toLocaleTimeString('en-GB', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
   };
 
   const aos = formatTime(windowStart);

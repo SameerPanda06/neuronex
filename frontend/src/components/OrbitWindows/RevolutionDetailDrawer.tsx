@@ -130,13 +130,15 @@ export function RevolutionDetailDrawer({ revolution, onClose }: RevolutionDetail
                   </span>
                 </div>
                 <div className="flex items-center gap-1 text-emerald-400 text-[11px]">
-                  {completedList.includes(img.id) || isCompleted ? (
+                  {completedList.includes(img.id) ? (
                     <>
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       <span>DOWNLINKED</span>
                     </>
                   ) : isActive ? (
                     <span className="text-cyan-300 font-bold animate-pulse">TRANSMITTING</span>
+                  ) : revolution.images_failed?.includes(img.id) ? (
+                    <span className="text-rose-400">FAILED</span>
                   ) : (
                     <span className="text-slate-400">QUEUED</span>
                   )}
@@ -152,7 +154,7 @@ export function RevolutionDetailDrawer({ revolution, onClose }: RevolutionDetail
         <div>
           <span className="text-slate-400 text-[10px] block">SEGMENTS DELIVERED</span>
           <strong className="text-emerald-300 text-sm">
-            {revolution.total_segments_confirmed} / {revolution.total_segments_planned || 120}
+            {revolution.total_segments_confirmed} / {revolution.total_segments_planned}
           </strong>
         </div>
         <div className="text-right">

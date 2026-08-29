@@ -1,25 +1,20 @@
 import { AlertTriangle, RotateCcw, CheckCircle2, Zap, Database } from 'lucide-react';
-import type { RetransmissionStats } from '../../types';
+import type { Retransmission } from '../../types';
+import { deriveRetransmissionStats } from '../../lib/missionMetrics';
 
 interface RetransmissionKpiStripProps {
-  stats: RetransmissionStats | null;
-  totalSegmentsPlanned?: number;
+  retransmissions: Retransmission[];
 }
 
-export function RetransmissionKpiStrip({ stats, totalSegmentsPlanned = 1252 }: RetransmissionKpiStripProps) {
-  const pendingCount = stats?.pending ?? 1;
-  const inProgressCount = stats?.acknowledged ?? 0;
-  const completedCount = stats?.completed ?? 2;
-  const totalRequests = stats?.total ?? 3;
+export function RetransmissionKpiStrip({ retransmissions }: RetransmissionKpiStripProps) {
+  const stats = deriveRetransmissionStats(retransmissions);
+  const pendingCount = stats.pending;
+  const inProgressCount = stats.acknowledged;
+  const completedCount = stats.completed;
+  const totalRequests = stats.total;
 
   // Approximate missing segments and data saved calculations
-  const totalMissingSegs = totalRequests * 3; // Approx ~3 segments per request
-  const retryRate = totalSegmentsPlanned > 0
-    ? ((totalMissingSegs / totalSegmentsPlanned) * 100).toFixed(2)
-    : '0.24';
-
-  // Bandwidth saved: sending 3 chunks of 256 B = 768 B vs sending entire image (~30 KB) -> ~97.4% saved
-  const dataSavedPercent = '97.4%';
+  const totalMissingSegs = retransmissions.reduce((sum, item) => sum + item.missing_segments.length, 0);
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
@@ -65,25 +60,25 @@ export function RetransmissionKpiStrip({ stats, totalSegmentsPlanned = 1252 }: R
       {/* 4. Retry Rate */}
       <div className="bg-[#0B132B]/85 backdrop-blur-md rounded-xl border border-cyan-900/30 p-3.5 flex flex-col justify-between shadow-md">
         <div className="flex items-center justify-between text-slate-400 mb-1">
-          <span className="text-[10px] font-mono uppercase tracking-wider font-semibold">RETRY RATE</span>
+          <span className="text-[10px] font-mono uppercase tracking-wider font-semibold">CHUNKS REQUESTED</span>
           <Zap className="w-3.5 h-3.5 text-purple-400" />
         </div>
         <div className="flex items-baseline gap-1.5">
-          <span className="text-2xl font-mono font-black text-purple-300">{retryRate}%</span>
-          <span className="text-[10px] font-mono text-slate-400">of packets</span>
+          <span className="text-2xl font-mono font-black text-purple-300">{totalMissingSegs}</span>
+          <span className="text-[10px] font-mono text-slate-400">segments</span>
         </div>
-        <div className="text-[9px] font-mono text-slate-500 mt-1">Optimal channel health</div>
+        <div className="text-[9px] font-mono text-slate-500 mt-1">Explicit NACK segment IDs</div>
       </div>
 
       {/* 5. Data Saved */}
       <div className="col-span-2 lg:col-span-1 bg-[#0B132B]/85 backdrop-blur-md rounded-xl border border-cyan-900/30 p-3.5 flex flex-col justify-between shadow-md">
         <div className="flex items-center justify-between text-slate-400 mb-1">
-          <span className="text-[10px] font-mono uppercase tracking-wider font-semibold">BANDWIDTH SAVED</span>
+          <span className="text-[10px] font-mono uppercase tracking-wider font-semibold">ARQ REQUESTS</span>
           <Database className="w-3.5 h-3.5 text-teal-400" />
         </div>
         <div className="flex items-baseline gap-1.5">
-          <span className="text-2xl font-mono font-black text-teal-300">{dataSavedPercent}</span>
-          <span className="text-[10px] font-mono text-slate-400">vs full resend</span>
+          <span className="text-2xl font-mono font-black text-teal-300">{totalRequests}</span>
+          <span className="text-[10px] font-mono text-slate-400">total</span>
         </div>
         <div className="text-[9px] font-mono text-slate-500 mt-1">Selective chunk ARQ</div>
       </div>

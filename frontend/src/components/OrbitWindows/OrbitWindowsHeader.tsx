@@ -10,7 +10,7 @@ export function OrbitWindowsHeader() {
   const [utcTime, setUtcTime] = useState<string>('');
 
   const isMock = mode === 'mock';
-  const activeRevNum = revStatus?.revolution?.revolution_num ?? 15;
+  const activeRevNum = revStatus?.revolution?.revolution_num ?? null;
 
   useEffect(() => {
     const updateTime = () => {
@@ -50,7 +50,7 @@ export function OrbitWindowsHeader() {
         <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0B132B] border border-cyan-900/40 text-slate-300 shadow-sm">
           <Orbit className="w-3.5 h-3.5 text-cyan-400 animate-spin-slow" />
           <span className="text-slate-400">ORBIT:</span>
-          <span className="text-cyan-300 font-bold">REV #{activeRevNum}</span>
+          <span className="text-cyan-300 font-bold">{activeRevNum === null ? '—' : `REV #${activeRevNum}`}</span>
         </div>
 
         {/* UTC Clock */}

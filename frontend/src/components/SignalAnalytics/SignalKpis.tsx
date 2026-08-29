@@ -14,41 +14,49 @@ import {
   getSnrQualityBgClass,
 } from '../../hooks/useTelemetry';
 import { cn, formatBps } from '../../utils/format';
-import type { SignalQuality, RevolutionStats } from '../../types';
+import type { SignalQuality } from '../../types';
+import type { DeliveryMetric } from '../../lib/missionMetrics';
 
 interface SignalKpisProps {
   signalData: SignalQuality | null;
-  revStats: RevolutionStats | null;
+  deliveryMetric: DeliveryMetric;
   activeThroughput?: number | null;
 }
 
-export function SignalKpis({ signalData, revStats, activeThroughput }: SignalKpisProps) {
+export function SignalKpis({ signalData, deliveryMetric, activeThroughput }: SignalKpisProps) {
   const telemetry = signalData?.telemetry || [];
 
   // RSSI
   const rssiStats = signalData?.stats?.rssi;
-  const currentRssi = rssiStats?.current ?? (telemetry[0]?.rssi ?? -72);
-  const minRssi = rssiStats?.min ?? -94;
-  const maxRssi = rssiStats?.max ?? -64;
-  const avgRssi = rssiStats?.avg ?? -74;
-  const rssiPoints = telemetry.map((t) => t.rssi ?? -75).slice(0, 15).reverse();
+  const currentRssi = rssiStats?.current ?? telemetry[0]?.rssi ?? null;
+  const minRssi = rssiStats?.min ?? null;
+  const maxRssi = rssiStats?.max ?? null;
+  const avgRssi = rssiStats?.avg ?? null;
+  const rssiPoints = telemetry.flatMap((t) => t.rssi === null ? [] : [t.rssi]).slice(0, 15).reverse();
 
   // SNR
   const snrStats = signalData?.stats?.snr;
-  const currentSnr = snrStats?.current ?? (telemetry[0]?.snr ?? 9.2);
-  const minSnr = snrStats?.min ?? 3.8;
-  const maxSnr = snrStats?.max ?? 12.4;
-  const avgSnr = snrStats?.avg ?? 8.9;
-  const snrPoints = telemetry.map((t) => t.snr ?? 8.0).slice(0, 15).reverse();
+  const currentSnr = snrStats?.current ?? telemetry[0]?.snr ?? null;
+  const minSnr = snrStats?.min ?? null;
+  const maxSnr = snrStats?.max ?? null;
+  const avgSnr = snrStats?.avg ?? null;
+  const snrPoints = telemetry.flatMap((t) => t.snr === null ? [] : [t.snr]).slice(0, 15).reverse();
 
   // Throughput
-  const liveThroughput = activeThroughput ?? 4800;
-  const throughputPoints = telemetry.map((_, i) => 4600 + Math.sin(i * 0.8) * 400).slice(0, 15);
+  const liveThroughput = activeThroughput ?? null;
+  const throughputPoints: number[] = [];
 
   // Packet Success
-  const totalPlanned = revStats?.total_segments_planned || 1252;
-  const totalConfirmed = revStats?.total_segments_confirmed || 1248;
-  const successRate = totalPlanned > 0 ? (totalConfirmed / totalPlanned) * 100 : 99.68;
+  const { attempted, confirmed, percentage: successRate, health } = deliveryMetric;
+  const deliveryBadgeClass = health === 'OPTIMAL'
+    ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+    : health === 'GOOD'
+    ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30'
+    : health === 'DEGRADED'
+    ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+    : health === 'POOR'
+    ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
+    : 'bg-slate-800/60 text-slate-400 border-slate-700';
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -58,16 +66,16 @@ export function SignalKpis({ signalData, revStats, activeThroughput }: SignalKpi
         subtitle="Received Signal Strength"
         icon={<Signal className="w-4 h-4 text-cyan-400" />}
         value={`${currentRssi !== null ? currentRssi : '—'}`}
-        unit="dBm"
+        unit={currentRssi === null ? '' : 'dBm'}
         qualityBadge={
           <span className={cn('px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase border', getSignalQualityBgClass(currentRssi))}>
             {getSignalQualityLabel(currentRssi)}
           </span>
         }
         stats={[
-          { label: 'MIN', value: `${minRssi} dBm` },
-          { label: 'MAX', value: `${maxRssi} dBm` },
-          { label: 'AVG', value: `${avgRssi.toFixed(1)} dBm` },
+          { label: 'MIN', value: minRssi === null ? '—' : `${minRssi} dBm` },
+          { label: 'MAX', value: maxRssi === null ? '—' : `${maxRssi} dBm` },
+          { label: 'AVG', value: avgRssi === null ? '—' : `${avgRssi.toFixed(1)} dBm` },
         ]}
         sparklineData={rssiPoints}
         sparklineColor="#06b6d4"
@@ -80,16 +88,16 @@ export function SignalKpis({ signalData, revStats, activeThroughput }: SignalKpi
         subtitle="Signal-to-Noise Ratio"
         icon={<Activity className="w-4 h-4 text-teal-400" />}
         value={`${currentSnr !== null ? currentSnr.toFixed(1) : '—'}`}
-        unit="dB"
+        unit={currentSnr === null ? '' : 'dB'}
         qualityBadge={
           <span className={cn('px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase border', getSnrQualityBgClass(currentSnr))}>
             {getSnrQualityLabel(currentSnr)}
           </span>
         }
         stats={[
-          { label: 'MIN', value: `${minSnr.toFixed(1)} dB` },
-          { label: 'MAX', value: `${maxSnr.toFixed(1)} dB` },
-          { label: 'AVG', value: `${avgSnr.toFixed(1)} dB` },
+          { label: 'MIN', value: minSnr === null ? '—' : `${minSnr.toFixed(1)} dB` },
+          { label: 'MAX', value: maxSnr === null ? '—' : `${maxSnr.toFixed(1)} dB` },
+          { label: 'AVG', value: avgSnr === null ? '—' : `${avgSnr.toFixed(1)} dB` },
         ]}
         sparklineData={snrPoints}
         sparklineColor="#14b8a6"
@@ -101,7 +109,7 @@ export function SignalKpis({ signalData, revStats, activeThroughput }: SignalKpi
         title="THROUGHPUT"
         subtitle="RF Link Data Rate"
         icon={<Zap className="w-4 h-4 text-amber-400" />}
-        value={formatBps(liveThroughput)}
+        value={liveThroughput === null ? 'NO DATA' : formatBps(liveThroughput)}
         unit=""
         qualityBadge={
           <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-amber-500/15 text-amber-300 border border-amber-500/30">
@@ -109,9 +117,9 @@ export function SignalKpis({ signalData, revStats, activeThroughput }: SignalKpi
           </span>
         }
         stats={[
-          { label: 'CHUNK', value: '256 B' },
-          { label: 'FRAME', value: '42 ms' },
-          { label: 'EFFICIENCY', value: '98.4%' },
+          { label: 'SOURCE', value: liveThroughput === null ? 'UNAVAILABLE' : 'ACTIVE IMAGE' },
+          { label: 'UNIT', value: 'BITS / SEC' },
+          { label: 'STATE', value: liveThroughput === null ? 'WAITING' : 'LIVE' },
         ]}
         sparklineData={throughputPoints}
         sparklineColor="#f59e0b"
@@ -120,22 +128,22 @@ export function SignalKpis({ signalData, revStats, activeThroughput }: SignalKpi
 
       {/* 4. Packet Success KPI */}
       <KpiCard
-        title="PACKET SUCCESS"
-        subtitle="Delivery Quality"
         icon={<ShieldCheck className="w-4 h-4 text-emerald-400" />}
-        value={`${successRate.toFixed(2)}%`}
+        title="SEGMENT DELIVERY"
+        subtitle="Confirmed / Attempted"
+        value={successRate === null ? 'NO DATA' : `${successRate.toFixed(2)}%`}
         unit=""
         qualityBadge={
-          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-            OPTIMAL
+          <span className={cn('px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase border', deliveryBadgeClass)}>
+            {health}
           </span>
         }
         stats={[
-          { label: 'CONFIRMED', value: `${totalConfirmed.toLocaleString()}` },
-          { label: 'TOTAL', value: `${totalPlanned.toLocaleString()}` },
-          { label: 'LOSS', value: `${Math.max(0, totalPlanned - totalConfirmed)} pkts` },
+          { label: 'CONFIRMED', value: `${confirmed.toLocaleString()}` },
+          { label: 'ATTEMPTED', value: `${attempted.toLocaleString()}` },
+          { label: 'UNCONFIRMED', value: `${Math.max(0, attempted - confirmed)} segs` },
         ]}
-        sparklineData={[96, 97, 98, 99, 99.2, 99.4, 99.6, 99.68]}
+        sparklineData={successRate === null ? [] : [successRate, successRate]}
         sparklineColor="#10b981"
         valueColorClass="text-emerald-400"
       />

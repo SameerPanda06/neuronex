@@ -12,11 +12,12 @@ import { useSignalQuality } from '../../hooks/useTelemetry';
 import {
   useRevolutions,
   useRevolutionStatus,
-  useRevolutionStats,
 } from '../../hooks/useRevolutions';
 import { useRetransmissionStats } from '../../hooks/useRetransmissions';
+import { useImages } from '../../hooks/useImages';
 import { useConnection } from '../../hooks/useConnection';
 import { WifiOff } from 'lucide-react';
+import { deriveSegmentDelivery } from '../../lib/missionMetrics';
 
 export function SignalAnalytics() {
   const [timeRange, setTimeRange] = useState<TimeRange>('LIVE');
@@ -37,11 +38,13 @@ export function SignalAnalytics() {
   const { data: signalData, loading: signalLoading } = useSignalQuality(undefined, hours);
   const { revolutions } = useRevolutions({ limit: 10 });
   const { status: revStatus } = useRevolutionStatus();
-  const { stats: revStats } = useRevolutionStats();
   const { stats: retransStats } = useRetransmissionStats();
+  const { images: transmittingImages } = useImages({ status: 'transmitting', limit: 1 });
 
   const isOffline = mode === 'live' && !connected;
   const telemetryPoints = signalData?.telemetry || [];
+  const deliveryMetric = deriveSegmentDelivery(revolutions);
+  const activeThroughput = transmittingImages[0]?.throughput_bps ?? null;
 
   return (
     <div className="space-y-6">
@@ -55,7 +58,7 @@ export function SignalAnalytics() {
         {isOffline && (
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-rose-950/60 border border-rose-500/40 text-rose-300 text-xs font-mono">
             <WifiOff className="w-4 h-4 text-rose-400 animate-pulse" />
-            <span>LIVE HARDWARE OFFLINE — DISPLAYING LAST TELEMETRY CACHE</span>
+            <span>LIVE HARDWARE OFFLINE — NO LIVE TELEMETRY</span>
           </div>
         )}
 
@@ -70,8 +73,8 @@ export function SignalAnalytics() {
       {/* 3. Primary KPI Cards */}
       <SignalKpis
         signalData={signalData}
-        revStats={revStats}
-        activeThroughput={4800}
+        deliveryMetric={deliveryMetric}
+        activeThroughput={activeThroughput}
       />
 
       {/* 4. Charts + Link Health Summary Grid */}
@@ -93,7 +96,7 @@ export function SignalAnalytics() {
           <LinkHealthCard
             signalData={signalData}
             revolutionStatus={revStatus}
-            revolutionStats={revStats}
+            deliveryMetric={deliveryMetric}
           />
         </div>
       </div>
@@ -101,9 +104,9 @@ export function SignalAnalytics() {
       {/* 5. Throughput + Packet Quality Panel */}
       <ThroughputPacketPanel
         telemetry={telemetryPoints}
-        revStats={revStats}
+        deliveryMetric={deliveryMetric}
         retransStats={retransStats}
-        activeThroughput={4800}
+        activeThroughput={activeThroughput}
       />
 
       {/* 6. Revolution Signal Heatmap (High-priority F4 Feature) */}

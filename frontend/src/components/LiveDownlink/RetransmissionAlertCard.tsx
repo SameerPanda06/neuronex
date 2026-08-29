@@ -6,8 +6,8 @@ interface RetransmissionAlertCardProps {
 }
 
 export function RetransmissionAlertCard({
-  missingSegments = [312, 319, 325],
-  status = 'pending',
+  missingSegments = [],
+  status,
 }: RetransmissionAlertCardProps) {
   const hasMissing = missingSegments.length > 0;
 
@@ -16,9 +16,9 @@ export function RetransmissionAlertCard({
       <div className="p-3 rounded-xl bg-emerald-950/30 border border-emerald-500/30 flex items-center justify-between text-xs font-mono">
         <div className="flex items-center gap-2 text-emerald-400">
           <CheckCircle2 className="w-4 h-4" />
-          <span className="font-semibold tracking-wide">ALL RECEIVED SEGMENTS HEALTHY</span>
+          <span className="font-semibold tracking-wide">NO ACTIVE RETRANSMISSION</span>
         </div>
-        <span className="text-[11px] text-emerald-400/80">0 Packet Loss Detected</span>
+        <span className="text-[11px] text-emerald-400/80">No NACK segment data</span>
       </div>
     );
   }

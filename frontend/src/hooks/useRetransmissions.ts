@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { dataSource } from '../data';
 import type { Retransmission, RetransmissionStats } from '../types';
+import { useResilientPolling } from './useResilientPolling';
 
 export function useRetransmissions(params?: {
   status?: string;
@@ -20,42 +21,25 @@ export function useRetransmissions(params?: {
       const res = await dataSource.retransmissions.list({ status, image_id, limit });
       setData(res);
       setError(null);
+      return true;
     } catch {
       setError('Failed to fetch retransmissions');
+      return false;
     } finally {
       setLoading(false);
     }
   }, [status, image_id, limit]);
 
-  useEffect(() => {
-    fetch();
-    const interval = setInterval(fetch, 5000);
-    return () => clearInterval(interval);
-  }, [fetch]);
+  useResilientPolling(fetch, 10_000);
 
   // Real-time updates via DataSource
   useEffect(() => {
     const unsubRequested = dataSource.retransmissions.subscribeRequested(
-      (event: { image_id: string; mission_id: string; missing_segments: number[] }) => {
-        setData((prev) => {
-          if (!prev) return prev;
-          const newRetrans: Retransmission = {
-            id: Date.now(),
-            image_id: event.image_id,
-            mission_id: event.mission_id,
-            missing_segments: event.missing_segments,
-            requested_at: new Date().toISOString(),
-            acknowledged_at: null,
-            completed_at: null,
-            status: 'pending',
-          };
-          return { ...prev, retransmissions: [newRetrans, ...prev.retransmissions], count: prev.count + 1 };
-        });
-      }
+      () => { void fetch(); }
     );
 
     const unsubAck = dataSource.retransmissions.subscribeAckConfirmed(
-      (event: { received: { retransmit_id?: number; image_id?: string } }) => {
+      (event: { received: { retransmit_id?: number; image_id?: string }; status?: 'acknowledged' | 'completed'; completed_at?: string }) => {
         setData((prev) => {
           if (!prev) return prev;
           return {
@@ -63,7 +47,11 @@ export function useRetransmissions(params?: {
             retransmissions: prev.retransmissions.map((r) =>
               (event.received.retransmit_id && r.id === event.received.retransmit_id) ||
               (event.received.image_id && r.image_id === event.received.image_id && r.status === 'pending')
-                ? { ...r, status: 'acknowledged', acknowledged_at: new Date().toISOString() }
+                ? {
+                    ...r,
+                    status: event.status ?? 'acknowledged',
+                    completed_at: event.status === 'completed' ? event.completed_at ?? r.completed_at : r.completed_at,
+                  }
                 : r
             ),
           };
@@ -75,13 +63,21 @@ export function useRetransmissions(params?: {
       unsubRequested();
       unsubAck();
     };
-  }, []);
+  }, [fetch]);
 
   const acknowledge = useCallback(async (id: number) => {
     try {
-      await dataSource.retransmissions.ack({ retransmit_id: id });
+      const response = await dataSource.retransmissions.ack({ retransmit_id: id });
+      setData((prev) => prev ? {
+        ...prev,
+        retransmissions: prev.retransmissions.map((item) =>
+          item.id === id ? response.retransmission : item
+        ),
+      } : prev);
+      return true;
     } catch {
       setError('Failed to acknowledge retransmission');
+      return false;
     }
   }, []);
 

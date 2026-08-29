@@ -14,19 +14,19 @@ export function ActiveImageCard({ image }: ActiveImageCardProps) {
         </div>
         <div className="flex flex-col items-center justify-center py-12 text-center text-slate-500">
           <Satellite className="w-12 h-12 mb-3 opacity-30 text-cyan-400" />
-          <p className="text-sm font-medium text-slate-300">Waiting For Next Downlink</p>
-          <p className="text-xs text-slate-500 mt-1">Satellite payload will start at next pass window</p>
+          <p className="text-sm font-medium text-slate-300">No Active Downlink</p>
+          <p className="text-xs text-slate-500 mt-1">Waiting for transmission data</p>
         </div>
       </div>
     );
   }
 
-  const confidence = image.confidence ? (image.confidence * 100).toFixed(1) : '96.4';
+  const confidence = image.confidence === null ? null : (image.confidence * 100).toFixed(1);
   const capturedTime = image.classified_at
-    ? new Date(image.classified_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) + ' UTC'
-    : '14:34:55 UTC';
+    ? new Date(image.classified_at).toLocaleTimeString('en-GB', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) + ' UTC'
+    : '—';
   const resolution = '1024 × 1024';
-  const jpegQuality = image.jpeg_quality ?? 82;
+  const jpegQuality = image.jpeg_quality;
 
   const isClear = image.classification === 'CLEAR';
   const isCloudy = image.classification === 'CLOUDY';
@@ -109,7 +109,7 @@ export function ActiveImageCard({ image }: ActiveImageCardProps) {
         </div>
         <div className="flex items-center justify-between">
           <span className="text-slate-400">AI Confidence</span>
-          <span className="text-emerald-400 font-semibold">{confidence}%</span>
+          <span className="text-emerald-400 font-semibold">{confidence === null ? '—' : `${confidence}%`}</span>
         </div>
         <div className="flex items-center justify-between">
           <span className="text-slate-400">Resolution</span>
@@ -117,7 +117,7 @@ export function ActiveImageCard({ image }: ActiveImageCardProps) {
         </div>
         <div className="flex items-center justify-between">
           <span className="text-slate-400">JPEG Quality</span>
-          <span className="text-slate-200 font-semibold">{jpegQuality}%</span>
+          <span className="text-slate-200 font-semibold">{jpegQuality === null ? '—' : `${jpegQuality}%`}</span>
         </div>
       </div>
     </div>

@@ -20,9 +20,7 @@ export function useConnection() {
   const disconnect = useCallback(() => dataSource.disconnect(), []);
 
   return {
-    connected: connectionState.connected,
-    statusText: connectionState.statusText,
-    mode: connectionState.mode,
+    ...connectionState,
     connect,
     disconnect,
   };

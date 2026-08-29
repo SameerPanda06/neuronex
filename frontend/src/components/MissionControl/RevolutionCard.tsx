@@ -3,21 +3,19 @@ import { useRevolutionStatus } from '../../hooks/useRevolutions';
 export function RevolutionCard() {
   const { status: revStatus } = useRevolutionStatus();
 
-  const revNum = revStatus?.revolution?.revolution_num ?? 128;
-  const timeRemaining = revStatus?.time_remaining ?? 41;
-  const totalWindow = revStatus?.revolution?.window_duration_sec ?? 60;
-  const pct = Math.max(0, Math.min(100, ((totalWindow - timeRemaining) / totalWindow) * 100));
+  const revNum = revStatus?.revolution?.revolution_num ?? null;
+  const timeRemaining = revStatus?.time_remaining ?? null;
+  const totalWindow = revStatus?.revolution?.window_duration_sec ?? null;
+  const pct = totalWindow !== null && totalWindow > 0 && timeRemaining !== null ? Math.max(0, Math.min(100, ((totalWindow - timeRemaining) / totalWindow) * 100)) : 0;
 
-  const mins = String(Math.floor(timeRemaining / 60)).padStart(2, '0');
-  const secs = String(timeRemaining % 60).padStart(2, '0');
-  const timeFormatted = `${mins}:${secs}`;
+  const timeFormatted = timeRemaining === null ? '—' : `${String(Math.floor(timeRemaining / 60)).padStart(2, '0')}:${String(timeRemaining % 60).padStart(2, '0')}`;
 
   const windowStart = revStatus?.revolution?.window_start
-    ? new Date(revStatus.revolution.window_start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
-    : '14:36:00';
+    ? new Date(revStatus.revolution.window_start).toLocaleTimeString('en-GB', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
+    : '—';
   const windowEnd = revStatus?.revolution?.window_end
-    ? new Date(revStatus.revolution.window_end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
-    : '14:37:00';
+    ? new Date(revStatus.revolution.window_end).toLocaleTimeString('en-GB', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
+    : '—';
 
   // SVG Circular Gauge calculations
   const radius = 38;
@@ -27,7 +25,7 @@ export function RevolutionCard() {
   return (
     <div className="bg-[#0B132B]/80 backdrop-blur-md rounded-xl border border-cyan-900/30 p-5 flex flex-col justify-between hover:border-cyan-500/40 transition-colors shadow-lg shadow-black/40 h-full min-h-[220px]">
       <div className="text-[11px] font-semibold tracking-wider text-slate-400 uppercase mb-1">
-        Revolution #{revNum}
+        {revNum === null ? 'Revolution —' : `Revolution #${revNum}`}
       </div>
 
       <div className="flex flex-col items-center justify-center my-auto py-1">

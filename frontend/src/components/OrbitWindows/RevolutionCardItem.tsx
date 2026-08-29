@@ -24,7 +24,7 @@ export function RevolutionCardItem({
       ? (revolution.total_segments_confirmed / revolution.total_segments_planned) * 100
       : 0;
 
-  const imagesCount = revolution.images_planned?.length || (isCompleted ? 2 : 0);
+  const imagesCount = revolution.images_planned?.length ?? 0;
 
   return (
     <div
@@ -113,7 +113,7 @@ export function RevolutionCardItem({
         <div className="bg-slate-950/40 p-1.5 rounded border border-slate-800/60">
           <span className="text-[9px] text-slate-500">SEGMENTS CONFIRMED</span>
           <strong className="text-emerald-300">
-            {revolution.total_segments_confirmed} / {revolution.total_segments_planned || 120}
+            {revolution.total_segments_confirmed} / {revolution.total_segments_planned}
           </strong>
         </div>
 

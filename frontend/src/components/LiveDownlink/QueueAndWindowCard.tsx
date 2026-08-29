@@ -12,32 +12,25 @@ export function QueueAndWindowCard({
   queue = [],
   activeImageId,
   revolution,
-  timeRemaining = 41,
+  timeRemaining = null,
 }: QueueAndWindowCardProps) {
   // Filter out the currently transmitting active image from upcoming list
   const upcomingQueue = queue
     .filter((img) => img.id !== activeImageId && img.status !== 'complete')
     .slice(0, 3);
 
-  const fallbackQueue = [
-    { id: 'IMG-000088', classification: 'CLEAR', priority: 1 },
-    { id: 'IMG-000101', classification: 'CLOUDY', priority: 2 },
-    { id: 'IMG-000106', classification: 'CLEAR', priority: 1 },
-  ];
-
-  const displayList = upcomingQueue.length > 0 ? upcomingQueue : fallbackQueue;
-
-  const revNum = revolution?.revolution_num ?? 128;
-  const mins = String(Math.floor((timeRemaining || 0) / 60)).padStart(2, '0');
-  const secs = String((timeRemaining || 0) % 60).padStart(2, '0');
-  const countdown = `${mins}:${secs}`;
+  const displayList = upcomingQueue;
+  const revNum = revolution?.revolution_num ?? null;
+  const mins = String(Math.floor((timeRemaining ?? 0) / 60)).padStart(2, '0');
+  const secs = String((timeRemaining ?? 0) % 60).padStart(2, '0');
+  const countdown = timeRemaining === null ? '—' : `${mins}:${secs}`;
 
   const windowStart = revolution?.window_start
-    ? new Date(revolution.window_start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
-    : '14:36:00';
+    ? new Date(revolution.window_start).toLocaleTimeString('en-GB', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
+    : '—';
   const windowEnd = revolution?.window_end
-    ? new Date(revolution.window_end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
-    : '14:37:00';
+    ? new Date(revolution.window_end).toLocaleTimeString('en-GB', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
+    : '—';
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
@@ -52,7 +45,7 @@ export function QueueAndWindowCard({
         </div>
 
         <div className="space-y-1.5">
-          {displayList.map((item, index) => {
+          {displayList.length === 0 ? <div className="py-5 text-center text-[11px] font-mono text-slate-500">EMPTY QUEUE</div> : displayList.map((item, index) => {
             const isClear = item.classification === 'CLEAR';
             const isCloudy = item.classification === 'CLOUDY';
             return (
@@ -89,10 +82,10 @@ export function QueueAndWindowCard({
         <div className="flex items-center justify-between mb-2">
           <div className="text-[11px] font-semibold tracking-wider text-slate-400 uppercase flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Revolution #{revNum}</span>
+            <span>{revNum === null ? 'Revolution —' : `Revolution #${revNum}`}</span>
           </div>
           <span className="text-[10px] font-mono px-1.5 py-0.2 rounded font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-            ACTIVE WINDOW
+            {revolution ? 'ACTIVE WINDOW' : 'UNAVAILABLE'}
           </span>
         </div>
 

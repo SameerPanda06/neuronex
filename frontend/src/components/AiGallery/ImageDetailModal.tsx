@@ -27,19 +27,13 @@ export function ImageDetailModal({
 
   const isClear = image.classification === 'CLEAR';
   const isCloudy = image.classification === 'CLOUDY';
-  const isNotVisible = image.classification === 'NOT_VISIBLE';
 
-  const confidence = image.confidence ? (image.confidence * 100).toFixed(1) : '95.0';
+  const confidence = image.confidence === null ? null : (image.confidence * 100).toFixed(1);
   const capturedTime = image.classified_at
     ? new Date(image.classified_at).toLocaleString()
-    : '14:34:55 UTC';
+    : '—';
 
-  const probabilities = image.all_probabilities || {
-    CLEAR: isClear ? 0.964 : 0.021,
-    CLOUDY: isCloudy ? 0.885 : 0.054,
-    NOT_VISIBLE: isNotVisible ? 0.912 : 0.025,
-    UNKNOWN: 0.0,
-  };
+  const probabilities = image.all_probabilities;
 
   const isTransmittingOrQueued =
     image.status === 'transmitting' || image.status === 'queued';
@@ -148,7 +142,7 @@ export function ImageDetailModal({
             </div>
             <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800">
               <div className="text-[10px] text-slate-400 uppercase">AI Confidence</div>
-              <div className="font-bold text-emerald-400 mt-1">{confidence}%</div>
+              <div className="font-bold text-emerald-400 mt-1">{confidence === null ? '—' : `${confidence}%`}</div>
             </div>
             <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800">
               <div className="text-[10px] text-slate-400 uppercase">Edge AI Decision</div>
@@ -156,11 +150,11 @@ export function ImageDetailModal({
             </div>
             <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800">
               <div className="text-[10px] text-slate-400 uppercase">JPEG Quality</div>
-              <div className="font-bold text-white mt-1">Q{image.jpeg_quality ?? 82}</div>
+              <div className="font-bold text-white mt-1">{image.jpeg_quality === null ? '—' : `Q${image.jpeg_quality}`}</div>
             </div>
             <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800">
               <div className="text-[10px] text-slate-400 uppercase">Total Segments</div>
-              <div className="font-bold text-white mt-1">{image.total_segments ?? 100}</div>
+              <div className="font-bold text-white mt-1">{image.total_segments ?? '—'}</div>
             </div>
             <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800">
               <div className="text-[10px] text-slate-400 uppercase">Confirmed</div>
@@ -168,7 +162,7 @@ export function ImageDetailModal({
             </div>
             <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800">
               <div className="text-[10px] text-slate-400 uppercase">ML Latency</div>
-              <div className="font-bold text-white mt-1">{image.latency_ms ?? 45} ms</div>
+              <div className="font-bold text-white mt-1">{image.latency_ms === null ? '—' : `${image.latency_ms} ms`}</div>
             </div>
             <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800">
               <div className="text-[10px] text-slate-400 uppercase">Captured Time</div>
@@ -182,7 +176,7 @@ export function ImageDetailModal({
               Edge-AI Class Probabilities
             </div>
             <div className="space-y-2">
-              {(['CLEAR', 'CLOUDY', 'NOT_VISIBLE'] as const).map((cls) => {
+              {probabilities ? (['CLEAR', 'CLOUDY', 'NOT_VISIBLE'] as const).map((cls) => {
                 const prob = probabilities[cls] ?? 0;
                 const probPct = (prob * 100).toFixed(1);
                 return (
@@ -205,7 +199,7 @@ export function ImageDetailModal({
                     </div>
                   </div>
                 );
-              })}
+              }) : <div className="py-4 text-center text-xs font-mono text-slate-500">PROBABILITIES UNAVAILABLE</div>}
             </div>
           </div>
         </div>

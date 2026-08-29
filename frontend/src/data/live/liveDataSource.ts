@@ -4,8 +4,18 @@ import {
   queueApi,
   retransmitApi,
   revolutionsApi,
+  healthApi,
 } from '../../services/api';
 import { socketService } from '../../services/socket';
+import {
+  normalizeClassifiedEvent,
+  normalizeProgressEvent,
+  normalizeRetransmissionEvent,
+  normalizeTelemetryEvent,
+} from './normalize';
+import type {
+  ImageClassifiedEvent, ImageProgressEvent, RetransmitRequestedEvent, TelemetryUpdateEvent,
+} from '../../types';
 import type {
   DataSource,
   TelemetryDataSource,
@@ -14,7 +24,11 @@ import type {
   RetransmissionDataSource,
   RevolutionsDataSource,
   ConnectionState,
+  SocketConnectionStatus,
 } from '../types';
+
+const HEALTH_INTERVAL_MS = 12_000;
+const TELEMETRY_STALE_MS = 15_000;
 
 class LiveTelemetryDataSource implements TelemetryDataSource {
   async getLatest() {
@@ -32,8 +46,11 @@ class LiveTelemetryDataSource implements TelemetryDataSource {
     return res.data;
   }
 
-  subscribeTelemetry(callback: (update: any) => void): () => void {
-    const unsub = socketService.on('telemetry:update', callback);
+  subscribeTelemetry(callback: (update: TelemetryUpdateEvent) => void): () => void {
+    const unsub = socketService.on<unknown>('telemetry:update', (value) => {
+      const event = normalizeTelemetryEvent(value);
+      if (event) callback(event);
+    });
     socketService.joinTelemetry();
     return () => {
       unsub();
@@ -71,12 +88,18 @@ class LiveImagesDataSource implements ImagesDataSource {
     return res.data;
   }
 
-  subscribeClassified(callback: (event: any) => void): () => void {
-    return socketService.on('image:classified', callback);
+  subscribeClassified(callback: (event: ImageClassifiedEvent) => void): () => void {
+    return socketService.on<unknown>('image:classified', (value) => {
+      const event = normalizeClassifiedEvent(value);
+      if (event) callback(event);
+    });
   }
 
-  subscribeProgress(callback: (event: any) => void): () => void {
-    return socketService.on('image:progress', callback);
+  subscribeProgress(callback: (event: ImageProgressEvent) => void): () => void {
+    return socketService.on<unknown>('image:progress', (value) => {
+      const event = normalizeProgressEvent(value);
+      if (event) callback(event);
+    });
   }
 
   subscribeStatus(callback: (event: any) => void): () => void {
@@ -140,8 +163,11 @@ class LiveRetransmissionDataSource implements RetransmissionDataSource {
     return res.data;
   }
 
-  subscribeRequested(callback: (event: any) => void): () => void {
-    return socketService.on('retransmit:requested', callback);
+  subscribeRequested(callback: (event: RetransmitRequestedEvent) => void): () => void {
+    return socketService.on<unknown>('retransmit:requested', (value) => {
+      const event = normalizeRetransmissionEvent(value);
+      if (event) callback(event);
+    });
   }
 
   subscribeAckConfirmed(callback: (event: any) => void): () => void {
@@ -207,41 +233,74 @@ export class LiveDataSource implements DataSource {
   public revolutions = new LiveRevolutionsDataSource();
 
   private connectionListeners: Set<(state: ConnectionState) => void> = new Set();
-  private connected = false;
+  private restStatus: ConnectionState['restStatus'] = 'checking';
+  private socketStatus: SocketConnectionStatus = 'disconnected';
+  private lastTelemetryAt: string | null = null;
+  private lastImageEventAt: string | null = null;
+  private lastSuccessfulRestAt: string | null = null;
+  private healthTimer: ReturnType<typeof setInterval> | null = null;
+  private freshnessTimer: ReturnType<typeof setInterval> | null = null;
+  private healthCheckInFlight = false;
+  private started = false;
 
   constructor() {
-    socketService.on('connected', () => {
-      this.connected = true;
+    socketService.on<SocketConnectionStatus>('socket:state', (status) => {
+      this.socketStatus = status;
       this.notifyConnectionListeners();
     });
-
-    socketService.on('disconnected', () => {
-      this.connected = false;
+    socketService.on('telemetry:update', () => {
+      this.lastTelemetryAt = new Date().toISOString();
       this.notifyConnectionListeners();
+    });
+    ['image:classified', 'image:progress', 'image:status'].forEach((event) => {
+      socketService.on(event, () => {
+        this.lastImageEventAt = new Date().toISOString();
+        this.notifyConnectionListeners();
+      });
     });
   }
 
   async connect(): Promise<void> {
-    try {
-      await socketService.connect();
-      this.connected = socketService.isConnected();
-    } catch {
-      this.connected = false;
-    }
+    if (this.started) return;
+    this.started = true;
+    this.restStatus = 'checking';
+    this.socketStatus = 'connecting';
     this.notifyConnectionListeners();
+    void this.checkHealth();
+    this.healthTimer = setInterval(() => void this.checkHealth(), HEALTH_INTERVAL_MS);
+    this.freshnessTimer = setInterval(() => this.notifyConnectionListeners(), 2_000);
+    try { await socketService.connect(); } catch { /* Reconnection remains active. */ }
   }
 
   disconnect(): void {
+    this.started = false;
+    if (this.healthTimer) clearInterval(this.healthTimer);
+    if (this.freshnessTimer) clearInterval(this.freshnessTimer);
+    this.healthTimer = null;
+    this.freshnessTimer = null;
     socketService.disconnect();
-    this.connected = false;
+    this.socketStatus = 'disconnected';
+    this.restStatus = 'disconnected';
     this.notifyConnectionListeners();
   }
 
   getConnectionState(): ConnectionState {
+    const telemetryFreshness = this.getTelemetryFreshness();
+    const connected = this.restStatus === 'connected' && this.socketStatus === 'connected';
+    let statusText: ConnectionState['statusText'] = 'RECONNECTING';
+    if (this.restStatus === 'disconnected') statusText = 'BACKEND OFFLINE';
+    else if (connected && telemetryFreshness === 'stale') statusText = 'STALE TELEMETRY';
+    else if (connected) statusText = 'LIVE HARDWARE';
     return {
-      connected: this.connected,
-      statusText: this.connected ? 'LIVE HARDWARE' : 'BACKEND OFFLINE',
+      connected,
+      statusText,
       mode: 'live',
+      restStatus: this.restStatus,
+      socketStatus: this.socketStatus,
+      telemetryFreshness,
+      lastTelemetryAt: this.lastTelemetryAt,
+      lastImageEventAt: this.lastImageEventAt,
+      lastSuccessfulRestAt: this.lastSuccessfulRestAt,
     };
   }
 
@@ -262,5 +321,30 @@ export class LiveDataSource implements DataSource {
         console.error('[LiveDataSource] Connection listener error:', err);
       }
     });
+  }
+
+  private getTelemetryFreshness(): ConnectionState['telemetryFreshness'] {
+    if (!this.lastTelemetryAt) return 'no_data';
+    const timestamp = Date.parse(this.lastTelemetryAt);
+    return Number.isFinite(timestamp) && Date.now() - timestamp <= TELEMETRY_STALE_MS
+      ? 'current'
+      : 'stale';
+  }
+
+  private async checkHealth(): Promise<void> {
+    if (!this.started || this.healthCheckInFlight) return;
+    this.healthCheckInFlight = true;
+    try {
+      await healthApi.check();
+      if (!this.started) return;
+      this.restStatus = 'connected';
+      this.lastSuccessfulRestAt = new Date().toISOString();
+    } catch {
+      if (!this.started) return;
+      this.restStatus = 'disconnected';
+    } finally {
+      this.healthCheckInFlight = false;
+      if (this.started) this.notifyConnectionListeners();
+    }
   }
 }

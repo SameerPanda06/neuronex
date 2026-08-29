@@ -36,17 +36,17 @@ export function LiveDownlink() {
     return () => clearInterval(interval);
   }, []);
 
-  const activeImage = images.find((img) => img.status === 'transmitting') || queue[0] || null;
-  const currentSeg = activeImage?.current_segment || activeImage?.segments_confirmed || 314;
-  const totalSegs = activeImage?.total_segments || 430;
+  const activeImage = images.find((img) => img.status === 'transmitting') ?? null;
+  const currentSeg = activeImage?.current_segment ?? activeImage?.segments_confirmed ?? 0;
+  const totalSegs = activeImage?.total_segments ?? 0;
 
   // Active missing segments from pending retransmissions
   const activeRetrans = retransmissions.find(
     (r) => activeImage && r.image_id === activeImage.id && r.status === 'pending'
   );
-  const missingSegments = activeRetrans?.missing_segments || [312, 319, 325];
+  const missingSegments = activeRetrans?.missing_segments ?? [];
 
-  const revNum = revStatus?.revolution?.revolution_num ?? 128;
+  const revNum = revStatus?.revolution?.revolution_num ?? null;
 
   return (
     <div className="space-y-5 pb-8">
@@ -71,11 +71,11 @@ export function LiveDownlink() {
           </div>
 
           <div className="text-slate-300 font-medium hidden md:block">
-            Revolution #{revNum}
+            {revNum === null ? 'Revolution —' : `Revolution #${revNum}`}
           </div>
 
           <div className="text-cyan-300 font-bold bg-slate-900/60 px-2.5 py-1 rounded border border-slate-800">
-            {utcTime || '14:36:18 UTC'}
+            {utcTime || '--:--:-- UTC'}
           </div>
         </div>
       </div>
@@ -88,7 +88,7 @@ export function LiveDownlink() {
           <SignalMetricsCard
             rssiOverride={activeImage?.rssi}
             snrOverride={activeImage?.snr}
-            packetsReceived={activeImage?.segments_confirmed ? activeImage.segments_confirmed * 4 : 1248}
+            packetsReceived={activeImage?.segments_confirmed ?? null}
             missingCount={missingSegments.length}
           />
         </div>
@@ -100,22 +100,22 @@ export function LiveDownlink() {
             missingCount={missingSegments.length}
           />
 
-          <SegmentMapCard
-            currentSegment={currentSeg}
-            totalSegments={totalSegs}
-            missingSegments={missingSegments}
-          />
+          {activeImage && totalSegs > 0 ? (
+            <SegmentMapCard currentSegment={currentSeg} totalSegments={totalSegs} missingSegments={missingSegments} />
+          ) : (
+            <div className="bg-[#0B132B]/80 rounded-xl border border-cyan-900/30 p-8 text-center text-xs font-mono text-slate-500">NO ACTIVE DOWNLINK</div>
+          )}
 
           <RetransmissionAlertCard
             missingSegments={missingSegments}
-            status={activeRetrans?.status || 'pending'}
+            status={activeRetrans?.status}
           />
 
           <QueueAndWindowCard
             queue={queue}
             activeImageId={activeImage?.id}
-            revolution={revStatus?.revolution || null}
-            timeRemaining={revStatus?.time_remaining || 41}
+            revolution={revStatus?.revolution ?? null}
+            timeRemaining={revStatus?.time_remaining ?? null}
           />
         </div>
       </div>

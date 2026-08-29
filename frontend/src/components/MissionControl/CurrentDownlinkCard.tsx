@@ -1,5 +1,5 @@
 import { useImages } from '../../hooks/useImages';
-import { formatBytes } from '../../utils/format';
+import { formatBps } from '../../utils/format';
 import { Satellite } from 'lucide-react';
 
 export function CurrentDownlinkCard() {
@@ -21,13 +21,13 @@ export function CurrentDownlinkCard() {
     );
   }
 
-  const progress = activeImage.progress_percent || 0;
-  const segmentsConfirmed = activeImage.segments_confirmed || 0;
-  const totalSegments = activeImage.total_segments || 100;
-  const rssi = activeImage.rssi ?? -67;
-  const snr = activeImage.snr ?? 11.2;
-  const throughput = activeImage.throughput_bps ? formatBytes(activeImage.throughput_bps) + '/s' : '4.8 KB/s';
-  const latency = activeImage.latency_ms_tx ?? activeImage.latency_ms ?? 128;
+  const progress = activeImage.progress_percent;
+  const segmentsConfirmed = activeImage.segments_confirmed;
+  const totalSegments = activeImage.total_segments;
+  const rssi = activeImage.rssi;
+  const snr = activeImage.snr;
+  const throughput = formatBps(activeImage.throughput_bps);
+  const latency = activeImage.latency_ms_tx ?? activeImage.latency_ms;
 
   return (
     <div className="bg-[#0B132B]/80 backdrop-blur-md rounded-xl border border-cyan-900/30 p-5 flex flex-col justify-between hover:border-cyan-500/40 transition-colors shadow-lg shadow-black/40 h-full">
@@ -90,7 +90,7 @@ export function CurrentDownlinkCard() {
           <div>
             <div className="flex items-center justify-between text-xs mb-1">
               <span className="font-mono text-slate-300 font-semibold">
-                Segment {segmentsConfirmed} / {totalSegments}
+                Segment {segmentsConfirmed} / {totalSegments ?? '—'}
               </span>
               <span className="font-mono font-bold text-cyan-400">
                 {progress}%
@@ -108,11 +108,11 @@ export function CurrentDownlinkCard() {
           <div className="grid grid-cols-4 gap-2 pt-2 border-t border-slate-800/80">
             <div>
               <div className="text-[10px] uppercase font-semibold text-slate-400">RSSI</div>
-              <div className="text-xs font-mono font-bold text-slate-200 mt-0.5">{rssi} dBm</div>
+              <div className="text-xs font-mono font-bold text-slate-200 mt-0.5">{rssi === null ? '—' : `${rssi} dBm`}</div>
             </div>
             <div>
               <div className="text-[10px] uppercase font-semibold text-slate-400">SNR</div>
-              <div className="text-xs font-mono font-bold text-slate-200 mt-0.5">{snr} dB</div>
+              <div className="text-xs font-mono font-bold text-slate-200 mt-0.5">{snr === null ? '—' : `${snr} dB`}</div>
             </div>
             <div>
               <div className="text-[10px] uppercase font-semibold text-slate-400">Throughput</div>
@@ -120,7 +120,7 @@ export function CurrentDownlinkCard() {
             </div>
             <div>
               <div className="text-[10px] uppercase font-semibold text-slate-400">Latency</div>
-              <div className="text-xs font-mono font-bold text-slate-200 mt-0.5">{latency} ms</div>
+              <div className="text-xs font-mono font-bold text-slate-200 mt-0.5">{latency === null ? '—' : `${latency} ms`}</div>
             </div>
           </div>
         </div>

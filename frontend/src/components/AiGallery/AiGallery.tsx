@@ -57,13 +57,14 @@ export function AiGallery({ onNavigateTab }: AiGalleryProps) {
     });
   }, [images, searchQuery]);
 
-  const clearCount = stats?.by_classification?.CLEAR ?? 34;
-  const cloudyCount = stats?.by_classification?.CLOUDY ?? 39;
-  const notVisibleCount = stats?.by_classification?.NOT_VISIBLE ?? 14;
-  const totalCount = stats?.total ?? 87;
+  const clearCount = stats?.by_classification?.CLEAR ?? 0;
+  const cloudyCount = stats?.by_classification?.CLOUDY ?? 0;
+  const notVisibleCount = stats?.by_classification?.NOT_VISIBLE ?? 0;
+  const totalCount = stats?.total ?? 0;
+  const discardCount = stats?.by_action?.discard ?? 0;
 
   const dataAvoidedPct =
-    totalCount > 0 ? Math.round((notVisibleCount / totalCount) * 100) : 41;
+    totalCount > 0 ? Math.round((discardCount / totalCount) * 100) : null;
 
   const counts = {
     ALL: totalCount,
@@ -72,7 +73,7 @@ export function AiGallery({ onNavigateTab }: AiGalleryProps) {
     NOT_VISIBLE: notVisibleCount,
   };
 
-  const revNum = revStatus?.revolution?.revolution_num ?? 128;
+  const revNum = revStatus?.revolution?.revolution_num ?? null;
 
   return (
     <div className="space-y-5 pb-8">
@@ -96,11 +97,11 @@ export function AiGallery({ onNavigateTab }: AiGalleryProps) {
           </div>
 
           <div className="text-slate-300 font-medium hidden md:block">
-            Revolution #{revNum}
+            {revNum === null ? 'Revolution —' : `Revolution #${revNum}`}
           </div>
 
           <div className="text-cyan-300 font-bold bg-slate-900/60 px-2.5 py-1 rounded border border-slate-800">
-            {utcTime || '14:36:18 UTC'}
+            {utcTime || '--:--:-- UTC'}
           </div>
         </div>
       </div>
@@ -118,7 +119,7 @@ export function AiGallery({ onNavigateTab }: AiGalleryProps) {
         <div className="p-3 rounded-xl bg-[#0B132B]/80 border border-cyan-900/30 flex flex-col justify-between">
           <div className="text-[10px] uppercase font-semibold text-slate-400 flex items-center gap-1">
             <Sparkles className="w-3 h-3 text-emerald-400" />
-            <span>Clear (Kept)</span>
+            <span>Clear</span>
           </div>
           <div className="text-xl font-bold font-space text-emerald-400 mt-1">{clearCount}</div>
         </div>
@@ -142,9 +143,9 @@ export function AiGallery({ onNavigateTab }: AiGalleryProps) {
         <div className="p-3 rounded-xl bg-[#0B132B]/80 border border-cyan-900/30 flex flex-col justify-between col-span-2 sm:col-span-1">
           <div className="text-[10px] uppercase font-semibold text-slate-400 flex items-center gap-1">
             <Zap className="w-3 h-3 text-cyan-400" />
-            <span>Data Avoided</span>
+            <span>Discard Rate</span>
           </div>
-          <div className="text-xl font-bold font-space text-emerald-400 mt-1">~{dataAvoidedPct}%</div>
+          <div className="text-xl font-bold font-space text-emerald-400 mt-1">{dataAvoidedPct === null ? '—' : `${dataAvoidedPct}%`}</div>
         </div>
       </div>
 

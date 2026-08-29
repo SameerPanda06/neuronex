@@ -1,11 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { RetransmissionHeader } from './RetransmissionHeader';
 import { RetransmissionKpiStrip } from './RetransmissionKpiStrip';
 import { RetransmissionTabs, type RetransmissionFilter } from './RetransmissionTabs';
 import { RetransmissionTable } from './RetransmissionTable';
 import { RetransmissionDetailPanel } from './RetransmissionDetailPanel';
-import { useRetransmissions, useRetransmissionStats } from '../../hooks/useRetransmissions';
-import { useRevolutionStats } from '../../hooks/useRevolutions';
+import { useRetransmissions } from '../../hooks/useRetransmissions';
 import { useConnection } from '../../hooks/useConnection';
 import { WifiOff } from 'lucide-react';
 import type { Retransmission } from '../../types';
@@ -16,16 +15,12 @@ export function RetransmissionCenter() {
   const [isProcessing, setIsProcessing] = useState(false);
 
   const { connected, mode } = useConnection();
-  const { retransmissions, loading, acknowledge } = useRetransmissions({
-    status: filter === 'all' ? undefined : filter,
-  });
-  const { stats } = useRetransmissionStats();
-  const { stats: revStats } = useRevolutionStats();
+  const { retransmissions: allList, loading, acknowledge } = useRetransmissions();
+  const retransmissions = filter === 'all' ? allList : allList.filter((item) => item.status === filter);
 
   const isOffline = mode === 'live' && !connected;
 
   // Compute counts for tabs
-  const allList = useRetransmissions().retransmissions;
   const counts = {
     all: allList.length,
     pending: allList.filter((r) => r.status === 'pending').length,
@@ -33,11 +28,18 @@ export function RetransmissionCenter() {
     completed: allList.filter((r) => r.status === 'completed').length,
   };
 
+  useEffect(() => {
+    if (!selectedRetrans) return;
+    const current = allList.find((item) => item.id === selectedRetrans.id);
+    if (current) setSelectedRetrans(current);
+  }, [allList, selectedRetrans]);
+
   const handleRetransmit = async (id: number) => {
+    if (isProcessing || allList.find((item) => item.id === id)?.status !== 'pending') return;
     setIsProcessing(true);
     try {
-      await acknowledge(id);
-      if (selectedRetrans && selectedRetrans.id === id) {
+      const succeeded = await acknowledge(id);
+      if (succeeded && selectedRetrans?.id === id) {
         setSelectedRetrans((prev) =>
           prev ? { ...prev, status: 'acknowledged', acknowledged_at: new Date().toISOString() } : null
         );
@@ -57,8 +59,7 @@ export function RetransmissionCenter() {
 
       {/* 2. Top Summary KPI Strip */}
       <RetransmissionKpiStrip
-        stats={stats}
-        totalSegmentsPlanned={revStats?.total_segments_planned || 1252}
+        retransmissions={allList}
       />
 
       {/* Offline Alert */}
@@ -87,7 +88,7 @@ export function RetransmissionCenter() {
         <div className="xl:col-span-7 space-y-4">
           <RetransmissionTable
             retransmissions={retransmissions}
-            selectedId={activeSelected?.id || null}
+            selectedId={activeSelected?.id ?? null}
             onSelect={setSelectedRetrans}
             onRetransmit={handleRetransmit}
             loading={loading && retransmissions.length === 0}

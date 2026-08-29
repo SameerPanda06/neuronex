@@ -1,5 +1,5 @@
 import type { Image } from '../../types';
-import { formatBytes } from '../../utils/format';
+import { formatBps } from '../../utils/format';
 
 interface TransmissionProgressCardProps {
   image: Image | null;
@@ -8,25 +8,25 @@ interface TransmissionProgressCardProps {
 
 export function TransmissionProgressCard({
   image,
-  missingCount = 3,
+  missingCount = 0,
 }: TransmissionProgressCardProps) {
-  const progress = image?.progress_percent ?? 73;
-  const segmentsConfirmed = image?.segments_confirmed ?? 314;
-  const totalSegments = image?.total_segments ?? 430;
-  const throughput = image?.throughput_bps ? formatBytes(image.throughput_bps) + '/s' : '4.8 KB/s';
-  const latency = image?.latency_ms_tx ?? image?.latency_ms ?? 128;
+  if (!image) {
+    return <div className="bg-[#0B132B]/80 rounded-xl border border-cyan-900/30 p-8 text-center text-xs font-mono text-slate-500">NO ACTIVE DOWNLINK</div>;
+  }
+  const progress = image.progress_percent;
+  const segmentsConfirmed = image.segments_confirmed;
+  const totalSegments = image.total_segments ?? 0;
+  const throughput = formatBps(image.throughput_bps);
+  const latency = image.latency_ms_tx ?? image.latency_ms;
 
   // Compute realistic ETA in HH:MM:SS based on remaining segments
   const remainingSegments = Math.max(0, totalSegments - segmentsConfirmed);
-  const throughputBps = image?.throughput_bps ?? 4800;
-  const avgChunkSizeBytes = image?.chunk_size ?? 128;
-  const remainingBytes = remainingSegments * avgChunkSizeBytes;
-  const etaSec = throughputBps > 0 ? Math.ceil(remainingBytes / (throughputBps / 8)) : 24;
+  const throughputBps = image.throughput_bps;
+  const avgChunkSizeBytes = image.chunk_size;
+  const remainingBytes = avgChunkSizeBytes === null ? null : remainingSegments * avgChunkSizeBytes;
+  const etaSec = throughputBps !== null && throughputBps > 0 && remainingBytes !== null ? Math.ceil(remainingBytes / (throughputBps / 8)) : null;
 
-  const etaHours = String(Math.floor(etaSec / 3600)).padStart(2, '0');
-  const etaMins = String(Math.floor((etaSec % 3600) / 60)).padStart(2, '0');
-  const etaSecs = String(etaSec % 60).padStart(2, '0');
-  const etaFormatted = `${etaHours}:${etaMins}:${etaSecs}`;
+  const etaFormatted = etaSec === null ? '—' : `${String(Math.floor(etaSec / 3600)).padStart(2, '0')}:${String(Math.floor((etaSec % 3600) / 60)).padStart(2, '0')}:${String(etaSec % 60).padStart(2, '0')}`;
 
   return (
     <div className="bg-[#0B132B]/80 backdrop-blur-md rounded-xl border border-cyan-900/30 p-5 flex flex-col justify-between hover:border-cyan-500/40 transition-colors shadow-lg shadow-black/40">
@@ -83,7 +83,7 @@ export function TransmissionProgressCard({
         </div>
         <div>
           <div className="text-[10px] uppercase text-slate-400 font-semibold">Latency</div>
-          <div className="text-sm font-bold text-slate-200 mt-0.5">{latency} ms</div>
+          <div className="text-sm font-bold text-slate-200 mt-0.5">{latency === null ? '—' : `${latency} ms`}</div>
         </div>
         <div>
           <div className="text-[10px] uppercase text-slate-400 font-semibold">ETA</div>

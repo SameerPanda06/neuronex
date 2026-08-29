@@ -351,6 +351,12 @@ export class MockDataSource implements DataSource {
       connected: this.connected,
       statusText: 'SIMULATION',
       mode: 'mock',
+      restStatus: 'disconnected',
+      socketStatus: 'disconnected',
+      telemetryFreshness: 'current',
+      lastTelemetryAt: null,
+      lastImageEventAt: null,
+      lastSuccessfulRestAt: null,
     };
   }
 

@@ -1,5 +1,5 @@
 // Images Hooks
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { dataSource } from '../data';
 import type { Image, ImagesResponse, ImagesStats, ImageProgress, ImageStatus } from '../types';
 
@@ -15,10 +15,12 @@ export function useImages(params?: {
   const [data, setData] = useState<ImagesResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const socketVersions = useRef(new Map<string, number>());
 
   const { status, classification, mission_id, limit, offset, sort, order } = params || {};
 
   const fetch = useCallback(async () => {
+    const requestedAt = Date.now();
     try {
       const res = await dataSource.images.list({
         status,
@@ -29,7 +31,18 @@ export function useImages(params?: {
         sort,
         order,
       });
-      setData(res);
+      setData((current) => {
+        if (!current) return res;
+        const currentById = new Map(current.images.map((image) => [image.id, image]));
+        return {
+          ...res,
+          images: res.images.map((image) =>
+            (socketVersions.current.get(image.id) ?? 0) > requestedAt
+              ? currentById.get(image.id) ?? image
+              : image
+          ),
+        };
+      });
       setError(null);
     } catch (e) {
       setError('Failed to fetch images');
@@ -45,9 +58,17 @@ export function useImages(params?: {
   // Real-time updates
   useEffect(() => {
     const unsubscribeClassified = dataSource.images.subscribeClassified( (event) => {
+      socketVersions.current.set(event.id, Date.now());
       setData((prev) => {
         if (!prev) return prev;
+        const matches = (!classification || event.classification === classification)
+          && (!status || status === 'classified')
+          && (!mission_id || event.mission_id === mission_id);
         const exists = prev.images.find((img) => img.id === event.id);
+        if (!matches) {
+          if (!exists) return prev;
+          return { ...prev, images: prev.images.filter((img) => img.id !== event.id), total: Math.max(0, prev.total - 1) };
+        }
         if (exists) {
           return {
             ...prev,
@@ -58,49 +79,25 @@ export function useImages(params?: {
             ),
           };
         }
-        const newImage: Image = {
-          id: event.id,
-          mission_id: event.mission_id,
-          file_path: '',
-          classification: event.classification,
-          confidence: event.confidence,
-          all_probabilities: null,
-          latency_ms: null,
-          classified_at: new Date().toISOString(),
-          action: event.action,
-          priority: event.priority,
-          jpeg_quality: 85,
-          status: 'classified',
-          total_segments: null,
-          segments_confirmed: 0,
-          current_segment: 0,
-          chunk_size: null,
-          rssi: null,
-          snr: null,
-          throughput_bps: null,
-          latency_ms_tx: null,
-          progress_percent: 0,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          transmitted_at: null,
-          completed_at: null,
-        };
-        return {
-          ...prev,
-          images: [newImage, ...prev.images],
-          total: prev.total + 1,
-        };
+        // Classification events are intentionally partial. Wait for REST rather than
+        // manufacturing file paths, timestamps, or mission fields that were not sent.
+        return prev;
       });
     });
 
     const unsubscribeProgress = dataSource.images.subscribeProgress( (event) => {
+      socketVersions.current.set(event.id, Date.now());
       setData((prev) => {
         if (!prev) return prev;
+        if (status && event.status !== status) {
+          const next = prev.images.filter((img) => img.id !== event.id);
+          return next.length === prev.images.length ? prev : { ...prev, images: next, total: Math.max(0, prev.total - 1) };
+        }
         return {
           ...prev,
           images: prev.images.map((img) =>
             img.id === event.id
-              ? { ...img, segments_confirmed: event.segments_confirmed, total_segments: event.segments_total, progress_percent: Math.round((event.segments_confirmed / event.segments_total) * 100), status: event.status }
+              ? { ...img, segments_confirmed: event.segments_confirmed, total_segments: event.segments_total, progress_percent: event.segments_total > 0 ? Math.round((event.segments_confirmed / event.segments_total) * 100) : 0, status: event.status }
               : img
           ),
         };
@@ -108,8 +105,13 @@ export function useImages(params?: {
     });
 
     const unsubscribeStatus = dataSource.images.subscribeStatus( (event: { image_id: string; status: ImageStatus }) => {
+      socketVersions.current.set(event.image_id, Date.now());
       setData((prev) => {
         if (!prev) return prev;
+        if (status && event.status !== status) {
+          const next = prev.images.filter((img) => img.id !== event.image_id);
+          return next.length === prev.images.length ? prev : { ...prev, images: next, total: Math.max(0, prev.total - 1) };
+        }
         return {
           ...prev,
           images: prev.images.map((img) =>
@@ -124,7 +126,7 @@ export function useImages(params?: {
       unsubscribeProgress();
       unsubscribeStatus();
     };
-  }, []);
+  }, [classification, mission_id, status]);
 
   return { images: data?.images || [], total: data?.total || 0, loading, error, refetch: fetch };
 }
@@ -135,7 +137,13 @@ export function useImage(id: string | null) {
   const [error, setError] = useState<string | null>(null);
 
   const fetch = useCallback(async () => {
-    if (!id) return;
+    if (!id) {
+      setData(null);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
     try {
       const res = await dataSource.images.get(id);
       setData(res);
@@ -160,7 +168,13 @@ export function useImageProgress(imageId: string | null) {
   const [error, setError] = useState<string | null>(null);
 
   const fetch = useCallback(async () => {
-    if (!imageId) return;
+    if (!imageId) {
+      setData(null);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
     try {
       const res = await dataSource.images.progress(imageId);
       setData(res);
@@ -182,13 +196,16 @@ export function useImageProgress(imageId: string | null) {
   useEffect(() => {
     const unsubscribe = dataSource.images.subscribeProgress( (event) => {
       if (event.id === imageId) {
+        const progressPercent = event.segments_total > 0
+          ? Math.round((event.segments_confirmed / event.segments_total) * 100)
+          : 0;
         setData({
           image_id: event.id,
           status: event.status,
           total_segments: event.segments_total,
           segments_confirmed: event.segments_confirmed,
           current_segment: event.segments_confirmed,
-          progress_percent: Math.round((event.segments_confirmed / event.segments_total) * 100),
+          progress_percent: progressPercent,
           rssi: null,
           snr: null,
           throughput_bps: null,
@@ -228,4 +245,3 @@ export function useImagesStats() {
 
   return { stats: data, loading, error, refetch: fetch };
 }
-

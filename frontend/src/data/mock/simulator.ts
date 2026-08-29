@@ -404,6 +404,11 @@ export class MockMissionSimulator {
       setTimeout(() => {
         item.status = 'completed';
         item.completed_at = new Date().toISOString();
+        this.emit('retransmit:ack:confirmed', {
+          received: { retransmit_id: item.id, image_id: item.image_id },
+          status: 'completed',
+          completed_at: item.completed_at,
+        });
       }, 2000);
       return item;
     }

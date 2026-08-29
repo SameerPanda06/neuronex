@@ -8,9 +8,9 @@ interface OrbitVisualizerProps {
 export function OrbitVisualizer({ status }: OrbitVisualizerProps) {
   const activeRev = status?.revolution;
   const isActive = status?.active && activeRev !== null;
-  const timeRemaining = status?.time_remaining ?? 35;
-  const totalWindow = activeRev?.window_duration_sec ?? 60;
-  const progress = Math.max(0, Math.min(1, (totalWindow - timeRemaining) / totalWindow));
+  const timeRemaining = status?.time_remaining ?? 0;
+  const totalWindow = activeRev?.window_duration_sec ?? 0;
+  const progress = totalWindow > 0 ? Math.max(0, Math.min(1, (totalWindow - timeRemaining) / totalWindow)) : 0;
 
   // Compute satellite orbital angle along the pass arc
   // When active: traverses from angle ~210 deg (AOS) to ~330 deg (LOS)
@@ -42,10 +42,10 @@ export function OrbitVisualizer({ status }: OrbitVisualizerProps) {
           </div>
           <div>
             <h3 className="font-space font-bold text-sm text-white uppercase tracking-wider">
-              ORBITAL GEOMETRY & TRACKING
+              ORBIT REFERENCE SCHEMATIC
             </h3>
             <p className="text-[10px] text-slate-400">
-              LEO 550km Polar Orbit • Ground Station AOS/LOS Tracking Cone
+              Illustrative ground-station AOS/LOS tracking geometry
             </p>
           </div>
         </div>
@@ -53,11 +53,11 @@ export function OrbitVisualizer({ status }: OrbitVisualizerProps) {
         <div className="flex items-center gap-2 text-xs">
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-950/70 border border-slate-800 text-[10px]">
             <span className="w-2 h-2 rounded-full bg-cyan-400" />
-            <span className="text-slate-300">INC: 97.4° SSO</span>
+            <span className="text-slate-300">INC: UNAVAILABLE</span>
           </div>
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-950/70 border border-slate-800 text-[10px]">
             <span className="w-2 h-2 rounded-full bg-emerald-400" />
-            <span className="text-slate-300">ALT: 550 KM</span>
+            <span className="text-slate-300">ALT: UNAVAILABLE</span>
           </div>
         </div>
       </div>
@@ -177,7 +177,7 @@ export function OrbitVisualizer({ status }: OrbitVisualizerProps) {
 
             {/* Satellite Label */}
             <text x="0" y="-16" textAnchor="middle" fill="#22d3ee" fontSize="10" fontWeight="bold" fontFamily="JetBrains Mono">
-              NEURONEX-1
+              {activeRev?.mission_id ?? 'NO ACTIVE PASS'}
             </text>
             <text x="0" y="20" textAnchor="middle" fill="#94a3b8" fontSize="8" fontFamily="JetBrains Mono">
               {isActive ? 'IN CONTACT' : 'ORBITING'}
@@ -205,19 +205,19 @@ export function OrbitVisualizer({ status }: OrbitVisualizerProps) {
       <div className="pt-2 border-t border-slate-800/80 grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs text-slate-300">
         <div className="bg-slate-950/60 p-2 rounded-lg border border-slate-800">
           <span className="text-[9px] text-slate-500 block">ORBIT PERIOD</span>
-          <strong className="text-cyan-300 font-bold">95.4 min</strong>
+          <strong className="text-cyan-300 font-bold">—</strong>
         </div>
         <div className="bg-slate-950/60 p-2 rounded-lg border border-slate-800">
           <span className="text-[9px] text-slate-500 block">DAILY PASSES</span>
-          <strong className="text-slate-200 font-bold">3 Windows / Day</strong>
+          <strong className="text-slate-200 font-bold">—</strong>
         </div>
         <div className="bg-slate-950/60 p-2 rounded-lg border border-slate-800">
           <span className="text-[9px] text-slate-500 block">VELOCITY</span>
-          <strong className="text-teal-300 font-bold">7.61 km/s</strong>
+          <strong className="text-teal-300 font-bold">—</strong>
         </div>
         <div className="bg-slate-950/60 p-2 rounded-lg border border-slate-800">
           <span className="text-[9px] text-slate-500 block">PASS DURATION</span>
-          <strong className="text-emerald-300 font-bold">60.0 sec</strong>
+          <strong className="text-emerald-300 font-bold">{activeRev ? `${activeRev.window_duration_sec} sec` : '—'}</strong>
         </div>
       </div>
     </div>

@@ -24,9 +24,9 @@ export function OrbitWindows() {
 
   // Derive active progress percent
   const activeRev = revStatus?.revolution;
-  const timeRemaining = revStatus?.time_remaining ?? 35;
-  const totalWindow = activeRev?.window_duration_sec ?? 60;
-  const activeProgressPercent = Math.max(0, Math.min(100, Math.round(((totalWindow - timeRemaining) / totalWindow) * 100)));
+  const timeRemaining = revStatus?.time_remaining ?? 0;
+  const totalWindow = activeRev?.window_duration_sec ?? 0;
+  const activeProgressPercent = totalWindow > 0 ? Math.max(0, Math.min(100, Math.round(((totalWindow - timeRemaining) / totalWindow) * 100))) : 0;
 
   // Auto-select active or first revolution if none selected
   const activeSelected = selectedRev ?? activeRev ?? (revolutions[0] || null);
@@ -40,7 +40,7 @@ export function OrbitWindows() {
       {isOffline && (
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-rose-950/60 border border-rose-500/40 text-rose-300 text-xs font-mono">
           <WifiOff className="w-4 h-4 text-rose-400 animate-pulse" />
-          <span>BACKEND OFFLINE — DISPLAYING PRE-COMPUTED ORBITAL EPHEMERIS SCHEDULE</span>
+          <span>BACKEND OFFLINE — ORBIT SCHEDULE UNAVAILABLE</span>
         </div>
       )}
 
@@ -85,7 +85,7 @@ export function OrbitWindows() {
         </div>
 
         <span className="text-[11px] text-slate-400">
-          Tracking Pass Frequency: <strong className="text-cyan-300">3 Windows / Day (60s Window Duration)</strong>
+          Scheduled passes: <strong className="text-cyan-300">{revolutions.length}</strong>
         </span>
       </div>
 

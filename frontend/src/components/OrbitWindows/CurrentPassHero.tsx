@@ -8,8 +8,8 @@ interface CurrentPassHeroProps {
 export function CurrentPassHero({ status }: CurrentPassHeroProps) {
   const activeRev = status?.revolution;
   const isActive = status?.active && activeRev !== null;
-  const timeRemaining = status?.time_remaining ?? (isActive ? 35 : 0);
-  const totalWindow = activeRev?.window_duration_sec ?? 60;
+  const timeRemaining = status?.time_remaining ?? 0;
+  const totalWindow = activeRev?.window_duration_sec ?? 0;
   const progressPercent = Math.max(0, Math.min(100, Math.round(((totalWindow - timeRemaining) / totalWindow) * 100)));
 
   const mins = String(Math.floor(timeRemaining / 60)).padStart(2, '0');
@@ -19,7 +19,7 @@ export function CurrentPassHero({ status }: CurrentPassHeroProps) {
   // Time formatters
   const formatTime = (isoString?: string | null) => {
     if (!isoString) return '--:--:-- UTC';
-    return new Date(isoString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) + ' UTC';
+    return new Date(isoString).toLocaleTimeString('en-GB', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) + ' UTC';
   };
 
   const aosTime = formatTime(activeRev?.window_start);
@@ -28,7 +28,7 @@ export function CurrentPassHero({ status }: CurrentPassHeroProps) {
   // Compute TCA as midpoint
   const tcaTime = activeRev?.window_start && activeRev?.window_end
     ? formatTime(new Date(new Date(activeRev.window_start).getTime() + (totalWindow / 2) * 1000).toISOString())
-    : '14:36:30 UTC';
+    : '--:--:-- UTC';
 
   // SVG Circular Gauge calculations
   const radius = 42;
@@ -50,13 +50,13 @@ export function CurrentPassHero({ status }: CurrentPassHeroProps) {
                 ACTIVE CONTACT PASS
               </span>
               <span className="text-xs text-slate-400">
-                Target: <strong className="text-slate-200">NEURONEX-1 (LEO 550km)</strong>
+                Mission: <strong className="text-slate-200">{activeRev?.mission_id}</strong>
               </span>
             </div>
 
             <div>
               <h2 className="text-3xl font-space font-black text-white tracking-wide flex items-baseline gap-2">
-                REVOLUTION #{activeRev?.revolution_num ?? 15}
+                REVOLUTION #{activeRev?.revolution_num}
                 <span className="text-xs font-mono font-medium text-teal-400">
                   [{totalWindow}s WINDOW]
                 </span>
@@ -146,7 +146,7 @@ export function CurrentPassHero({ status }: CurrentPassHeroProps) {
               ORBIT CONTACT IDLE
             </span>
             <h2 className="text-2xl font-space font-bold text-white">
-              NEXT CONTACT: REVOLUTION #{status?.next_revolution?.revolution_num ?? 16}
+              {status?.next_revolution ? `NEXT CONTACT: REVOLUTION #${status.next_revolution.revolution_num}` : 'NEXT CONTACT UNAVAILABLE'}
             </h2>
             <p className="text-xs text-slate-400">
               Satellite is currently traversing eclipse shadow / non-visible orbital segment.
@@ -159,10 +159,10 @@ export function CurrentPassHero({ status }: CurrentPassHeroProps) {
               TIME UNTIL AOS
             </div>
             <div className="text-2xl font-mono font-black text-amber-300 mt-1">
-              01:48:32
+              {status?.time_until_next === null || status?.time_until_next === undefined ? '—' : `${String(Math.floor(status.time_until_next / 3600)).padStart(2, '0')}:${String(Math.floor((status.time_until_next % 3600) / 60)).padStart(2, '0')}:${String(status.time_until_next % 60).padStart(2, '0')}`}
             </div>
             <div className="text-[10px] text-slate-400 mt-1 flex items-center justify-center gap-1">
-              <span>Next Window: 60s</span>
+              <span>{status?.next_revolution ? `Next Window: ${status.next_revolution.window_duration_sec}s` : 'No scheduled window data'}</span>
               <ArrowRight className="w-3 h-3 text-slate-400" />
             </div>
           </div>

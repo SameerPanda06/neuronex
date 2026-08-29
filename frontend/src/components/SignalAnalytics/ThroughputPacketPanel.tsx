@@ -12,32 +12,30 @@ import {
 } from 'recharts';
 import { Zap, Layers, CheckCircle2, AlertOctagon } from 'lucide-react';
 import { formatBps } from '../../utils/format';
-import type { Telemetry, RevolutionStats, RetransmissionStats, PacketType } from '../../types';
+import type { Telemetry, RetransmissionStats, PacketType } from '../../types';
+import type { DeliveryMetric } from '../../lib/missionMetrics';
 
 interface ThroughputPacketPanelProps {
   telemetry: Telemetry[];
-  revStats: RevolutionStats | null;
+  deliveryMetric: DeliveryMetric;
   retransStats: RetransmissionStats | null;
   activeThroughput?: number | null;
 }
 
 export function ThroughputPacketPanel({
   telemetry,
-  revStats,
+  deliveryMetric,
   retransStats,
   activeThroughput,
 }: ThroughputPacketPanelProps) {
   // Derive throughput time-series points
-  const baseRate = activeThroughput ?? 4800;
+  const baseRate = activeThroughput ?? null;
   const throughputData = telemetry
     .slice(0, 30)
     .reverse()
-    .map((t, idx) => {
-      const time = t.timestamp
-        ? new Date(t.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-        : `14:${20 + idx}:00`;
-      const variance = (t.snr ? (t.snr - 8) * 120 : (idx % 4) * 80);
-      const rate = Math.max(1200, Math.round(baseRate + variance));
+    .map((t) => {
+      const time = new Date(t.timestamp).toLocaleTimeString('en-GB', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const rate = baseRate;
       return {
         time,
         rate,
@@ -65,18 +63,15 @@ export function ThroughputPacketPanel({
   });
 
   const packetDistributionData = [
-    { type: 'DATA', count: packetTypeCounts.DATA || 18, color: '#06b6d4' },
-    { type: 'ACK', count: packetTypeCounts.ACK || 7, color: '#10b981' },
-    { type: 'TELEM', count: packetTypeCounts.TELEMETRY || 4, color: '#14b8a6' },
-    { type: 'META', count: packetTypeCounts.META || 1, color: '#8b5cf6' },
-    { type: 'NACK', count: packetTypeCounts.NACK || (retransStats?.pending || 0), color: '#f43f5e' },
+    { type: 'DATA', count: packetTypeCounts.DATA, color: '#06b6d4' },
+    { type: 'ACK', count: packetTypeCounts.ACK, color: '#10b981' },
+    { type: 'TELEM', count: packetTypeCounts.TELEMETRY, color: '#14b8a6' },
+    { type: 'META', count: packetTypeCounts.META, color: '#8b5cf6' },
+    { type: 'NACK', count: packetTypeCounts.NACK, color: '#f43f5e' },
   ];
 
-  const totalPackets = telemetry.length > 0 ? telemetry.length : 30;
-  const totalConfirmed = revStats?.total_segments_confirmed ?? 1248;
-  const totalPlanned = revStats?.total_segments_planned ?? 1252;
-  const retransmitCount = retransStats?.total ?? 3;
-  const deliveryQuality = totalPlanned > 0 ? ((totalConfirmed / totalPlanned) * 100).toFixed(2) : '99.68';
+  const totalPackets = telemetry.length;
+  const retransmitCount = retransStats?.total ?? 0;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -104,7 +99,7 @@ export function ThroughputPacketPanel({
             <div className="text-right">
               <div className="text-[10px] text-slate-400">LIVE BANDWIDTH</div>
               <div className="text-sm font-black text-amber-300">
-                {formatBps(baseRate)}
+                {baseRate === null || baseRate === undefined ? 'NO DATA' : formatBps(baseRate)}
               </div>
             </div>
           </div>
@@ -179,10 +174,12 @@ export function ThroughputPacketPanel({
             <div className="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
               <div className="flex items-center gap-1.5 text-emerald-400 mb-1">
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                <span className="text-[10px] font-mono font-semibold">SUCCESS RATE</span>
+                <span className="text-[10px] font-mono font-semibold">SEGMENT DELIVERY</span>
               </div>
-              <div className="text-base font-mono font-black text-emerald-300">{deliveryQuality}%</div>
-              <div className="text-[9px] font-mono text-slate-400 mt-0.5">{totalConfirmed} confirmed</div>
+              <div className="text-base font-mono font-black text-emerald-300">
+                {deliveryMetric.percentage === null ? 'NO DATA' : `${deliveryMetric.percentage.toFixed(2)}%`}
+              </div>
+              <div className="text-[9px] font-mono text-slate-400 mt-0.5">{deliveryMetric.confirmed} / {deliveryMetric.attempted} confirmed</div>
             </div>
 
             <div className="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
@@ -192,7 +189,7 @@ export function ThroughputPacketPanel({
               </div>
               <div className="text-base font-mono font-black text-amber-300">{retransmitCount} requests</div>
               <div className="text-[9px] font-mono text-slate-400 mt-0.5">
-                {retransStats?.pending || 0} active NACKs
+                {retransStats?.pending ?? 0} active NACKs
               </div>
             </div>
           </div>

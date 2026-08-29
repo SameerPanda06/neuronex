@@ -23,23 +23,22 @@ export function SnrChartCard({ telemetry, loading }: SnrChartCardProps) {
   const chartData = telemetry
     .slice(0, 35)
     .reverse()
-    .map((t, idx) => {
-      const time = t.timestamp
-        ? new Date(t.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-        : `14:${20 + idx}:00`;
+    .filter((t) => t.snr !== null)
+    .map((t) => {
+      const time = new Date(t.timestamp).toLocaleTimeString('en-GB', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', second: '2-digit' });
       return {
         time,
-        snr: t.snr !== null ? parseFloat(Number(t.snr).toFixed(1)) : 8.5,
-        packet_type: t.packet_type || 'DATA',
+        snr: parseFloat(Number(t.snr).toFixed(1)),
+        packet_type: t.packet_type,
       };
     });
 
   const snrValues = telemetry.map((t) => t.snr).filter((v): v is number => v !== null);
-  const latestSnr = snrValues[0] ?? 9.2;
-  const minSnr = snrValues.length > 0 ? Math.min(...snrValues) : 3.8;
-  const maxSnr = snrValues.length > 0 ? Math.max(...snrValues) : 12.4;
+  const latestSnr = snrValues[0] ?? null;
+  const minSnr = snrValues.length > 0 ? Math.min(...snrValues) : null;
+  const maxSnr = snrValues.length > 0 ? Math.max(...snrValues) : null;
   const avgSnr =
-    snrValues.length > 0 ? snrValues.reduce((a, b) => a + b, 0) / snrValues.length : 8.9;
+    snrValues.length > 0 ? snrValues.reduce((a, b) => a + b, 0) / snrValues.length : null;
 
   // Custom technical tooltip
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -92,15 +91,15 @@ export function SnrChartCard({ telemetry, loading }: SnrChartCardProps) {
         {/* Min / Max / Avg / Current Callouts */}
         <div className="flex items-center gap-3 font-mono text-xs">
           <div className="hidden sm:flex items-center gap-2 text-[10px] bg-slate-950/60 px-2.5 py-1 rounded-lg border border-slate-800">
-            <span className="text-slate-500">MIN: <strong className="text-slate-300 font-bold">{minSnr.toFixed(1)}</strong></span>
-            <span className="text-slate-500">MAX: <strong className="text-slate-300 font-bold">{maxSnr.toFixed(1)}</strong></span>
-            <span className="text-slate-500">AVG: <strong className="text-teal-400 font-bold">{avgSnr.toFixed(1)}</strong></span>
+            <span className="text-slate-500">MIN: <strong className="text-slate-300 font-bold">{minSnr === null ? '—' : minSnr.toFixed(1)}</strong></span>
+            <span className="text-slate-500">MAX: <strong className="text-slate-300 font-bold">{maxSnr === null ? '—' : maxSnr.toFixed(1)}</strong></span>
+            <span className="text-slate-500">AVG: <strong className="text-teal-400 font-bold">{avgSnr === null ? '—' : avgSnr.toFixed(1)}</strong></span>
           </div>
 
           <div className="text-right">
             <div className="text-[10px] text-slate-400">CURRENT</div>
             <div className={cn('text-sm font-black', getSnrQualityClass(latestSnr))}>
-              {latestSnr.toFixed(1)} dB
+              {latestSnr === null ? '—' : `${latestSnr.toFixed(1)} dB`}
             </div>
           </div>
         </div>

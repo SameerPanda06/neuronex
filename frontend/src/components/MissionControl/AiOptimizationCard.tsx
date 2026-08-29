@@ -10,21 +10,21 @@ const COLORS = {
 export function AiOptimizationCard() {
   const { stats } = useImagesStats();
 
-  const clearCount = stats?.by_classification?.CLEAR ?? 34;
-  const cloudyCount = stats?.by_classification?.CLOUDY ?? 39;
-  const notVisibleCount = stats?.by_classification?.NOT_VISIBLE ?? 14;
+  const clearCount = stats?.by_classification?.CLEAR ?? 0;
+  const cloudyCount = stats?.by_classification?.CLOUDY ?? 0;
+  const notVisibleCount = stats?.by_classification?.NOT_VISIBLE ?? 0;
+  const discardCount = stats?.by_action?.discard ?? 0;
 
-  const total = clearCount + cloudyCount + notVisibleCount || 87;
-  const clearPct = Math.round((clearCount / total) * 100);
-  const cloudyPct = Math.round((cloudyCount / total) * 100);
-  const notVisiblePct = Math.round((notVisibleCount / total) * 100);
-
-  const dataAvoidedPct = notVisiblePct > 0 ? notVisiblePct : 41;
+  const total = clearCount + cloudyCount + notVisibleCount;
+  const clearPct = total > 0 ? Math.round((clearCount / total) * 100) : 0;
+  const cloudyPct = total > 0 ? Math.round((cloudyCount / total) * 100) : 0;
+  const notVisiblePct = total > 0 ? Math.round((notVisibleCount / total) * 100) : 0;
+  const discardRate = total > 0 ? Math.round((discardCount / total) * 100) : null;
 
   const data = [
-    { name: 'Clear (Kept)', value: clearCount, color: COLORS.CLEAR },
-    { name: 'Cloudy (Kept)', value: cloudyCount, color: COLORS.CLOUDY },
-    { name: 'Not Visible (Discarded)', value: notVisibleCount, color: COLORS.NOT_VISIBLE },
+    { name: 'Clear', value: clearCount, color: COLORS.CLEAR },
+    { name: 'Cloudy', value: cloudyCount, color: COLORS.CLOUDY },
+    { name: 'Not Visible', value: notVisibleCount, color: COLORS.NOT_VISIBLE },
   ];
 
   return (
@@ -58,8 +58,8 @@ export function AiOptimizationCard() {
             </ResponsiveContainer>
           </div>
           <div className="text-center mt-1">
-            <div className="text-[11px] font-medium text-slate-400">Data Avoided</div>
-            <div className="text-sm font-bold font-mono text-emerald-400">~{dataAvoidedPct}%</div>
+            <div className="text-[11px] font-medium text-slate-400">Discard Rate</div>
+            <div className="text-sm font-bold font-mono text-emerald-400">{discardRate === null ? '—' : `${discardRate}%`}</div>
           </div>
         </div>
 
@@ -68,7 +68,7 @@ export function AiOptimizationCard() {
           <div className="flex items-center justify-between p-1.5 rounded-lg bg-slate-900/40 border border-slate-800/40">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-sm shadow-cyan-400/50" />
-              <span className="text-slate-300 font-sans text-xs">Clear (Kept)</span>
+              <span className="text-slate-300 font-sans text-xs">Clear</span>
             </div>
             <span className="text-slate-200 font-semibold">{clearCount} ({clearPct}%)</span>
           </div>
@@ -76,7 +76,7 @@ export function AiOptimizationCard() {
           <div className="flex items-center justify-between p-1.5 rounded-lg bg-slate-900/40 border border-slate-800/40">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50" />
-              <span className="text-slate-300 font-sans text-xs">Cloudy (Kept)</span>
+              <span className="text-slate-300 font-sans text-xs">Cloudy</span>
             </div>
             <span className="text-slate-200 font-semibold">{cloudyCount} ({cloudyPct}%)</span>
           </div>
@@ -84,7 +84,7 @@ export function AiOptimizationCard() {
           <div className="flex items-center justify-between p-1.5 rounded-lg bg-slate-900/40 border border-slate-800/40">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-slate-500" />
-              <span className="text-slate-400 font-sans text-xs">Not Visible (Discarded)</span>
+              <span className="text-slate-400 font-sans text-xs">Not Visible</span>
             </div>
             <span className="text-slate-400 font-semibold">{notVisibleCount} ({notVisiblePct}%)</span>
           </div>

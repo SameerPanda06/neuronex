@@ -35,8 +35,8 @@ export function MissionControl({ onNavigateTab }: MissionControlProps) {
     return () => clearInterval(interval);
   }, []);
 
-  const revNum = revStatus?.revolution?.revolution_num ?? 128;
-  const missionId = revStatus?.revolution?.mission_id ?? 'NEX-000142';
+  const revNum = revStatus?.revolution?.revolution_num ?? null;
+  const missionId = revStatus?.revolution?.mission_id ?? null;
 
   return (
     <div className="space-y-5 pb-8">
@@ -47,7 +47,7 @@ export function MissionControl({ onNavigateTab }: MissionControlProps) {
             MISSION CONTROL
           </h1>
           <p className="text-xs font-mono text-cyan-400/90 mt-0.5">
-            Mission {missionId}
+            {missionId === null ? 'MISSION UNAVAILABLE' : `Mission ${missionId}`}
           </p>
         </div>
 
@@ -61,11 +61,11 @@ export function MissionControl({ onNavigateTab }: MissionControlProps) {
           </div>
 
           <div className="text-slate-300 font-medium hidden md:block">
-            Revolution #{revNum}
+            {revNum === null ? 'Revolution —' : `Revolution #${revNum}`}
           </div>
 
           <div className="text-cyan-300 font-bold bg-slate-900/60 px-2.5 py-1 rounded border border-slate-800">
-            {utcTime || '14:36:18 UTC'}
+            {utcTime || '--:--:-- UTC'}
           </div>
         </div>
       </div>

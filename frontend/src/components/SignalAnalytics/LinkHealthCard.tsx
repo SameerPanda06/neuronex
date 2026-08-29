@@ -5,38 +5,35 @@ import {
   getSignalQualityBgClass,
 } from '../../hooks/useTelemetry';
 import { cn } from '../../utils/format';
-import type { SignalQuality, RevolutionStatusResponse, RevolutionStats } from '../../types';
+import type { SignalQuality, RevolutionStatusResponse } from '../../types';
+import type { DeliveryMetric } from '../../lib/missionMetrics';
 
 interface LinkHealthCardProps {
   signalData: SignalQuality | null;
   revolutionStatus: RevolutionStatusResponse | null;
-  revolutionStats: RevolutionStats | null;
+  deliveryMetric: DeliveryMetric;
 }
 
 export function LinkHealthCard({
   signalData,
   revolutionStatus,
-  revolutionStats,
+  deliveryMetric,
 }: LinkHealthCardProps) {
   const rssiStats = signalData?.stats?.rssi;
   const snrStats = signalData?.stats?.snr;
 
-  const currentRssi = rssiStats?.current ?? -72;
-  const peakRssi = rssiStats?.max ?? -64;
-  const avgRssi = rssiStats?.avg ?? -74;
-  const minRssi = rssiStats?.min ?? -92;
-  const avgSnr = snrStats?.avg ?? 8.9;
-
-  const totalPlanned = revolutionStats?.total_segments_planned || 1252;
-  const totalConfirmed = revolutionStats?.total_segments_confirmed || 1248;
-  const packetSuccess = totalPlanned > 0 ? ((totalConfirmed / totalPlanned) * 100).toFixed(2) : '99.68';
+  const currentRssi = rssiStats?.current ?? null;
+  const peakRssi = rssiStats?.max ?? null;
+  const avgRssi = rssiStats?.avg ?? null;
+  const minRssi = rssiStats?.min ?? null;
+  const avgSnr = snrStats?.avg ?? null;
 
   const activeRev = revolutionStatus?.revolution;
-  const activeRevNum = activeRev?.revolution_num ?? 15;
-  const timeRemaining = revolutionStatus?.time_remaining ?? 35;
-  const min = Math.floor(timeRemaining / 60);
-  const sec = timeRemaining % 60;
-  const formattedCountdown = `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+  const activeRevNum = activeRev?.revolution_num ?? null;
+  const timeRemaining = revolutionStatus?.time_remaining ?? null;
+  const min = timeRemaining === null ? 0 : Math.floor(timeRemaining / 60);
+  const sec = timeRemaining === null ? 0 : timeRemaining % 60;
+  const formattedCountdown = timeRemaining === null ? '—' : `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
 
   const linkQualityLabel = getSignalQualityLabel(currentRssi);
 
@@ -51,7 +48,7 @@ export function LinkHealthCard({
             </div>
             <div>
               <h3 className="font-space font-bold text-sm text-white uppercase tracking-wider">
-                LINK HEALTH SUMMARY
+                RF LINK HEALTH
               </h3>
               <p className="text-[10px] font-mono text-slate-400">
                 Ground station telemetry aggregates
@@ -76,7 +73,7 @@ export function LinkHealthCard({
               <Radio className="w-3.5 h-3.5 text-cyan-400" />
               Peak RSSI
             </span>
-            <span className="font-bold text-emerald-400">{peakRssi} dBm</span>
+            <span className="font-bold text-emerald-400">{peakRssi === null ? '—' : `${peakRssi} dBm`}</span>
           </div>
 
           <div className="flex items-center justify-between p-2 rounded-lg bg-slate-950/60 border border-slate-800/80">
@@ -85,7 +82,7 @@ export function LinkHealthCard({
               Average RSSI
             </span>
             <span className={cn('font-bold', getSignalQualityClass(avgRssi))}>
-              {avgRssi.toFixed(1)} dBm
+              {avgRssi === null ? '—' : `${avgRssi.toFixed(1)} dBm`}
             </span>
           </div>
 
@@ -94,7 +91,7 @@ export function LinkHealthCard({
               <Radio className="w-3.5 h-3.5 text-slate-500" />
               Minimum RSSI
             </span>
-            <span className="font-bold text-slate-300">{minRssi} dBm</span>
+            <span className="font-bold text-slate-300">{minRssi === null ? '—' : `${minRssi} dBm`}</span>
           </div>
 
           <div className="flex items-center justify-between p-2 rounded-lg bg-slate-950/60 border border-slate-800/80">
@@ -102,15 +99,17 @@ export function LinkHealthCard({
               <Activity className="w-3.5 h-3.5 text-teal-400" />
               Average SNR
             </span>
-            <span className="font-bold text-teal-300">{avgSnr.toFixed(1)} dB</span>
+            <span className="font-bold text-teal-300">{avgSnr === null ? '—' : `${avgSnr.toFixed(1)} dB`}</span>
           </div>
 
           <div className="flex items-center justify-between p-2 rounded-lg bg-slate-950/60 border border-slate-800/80">
             <span className="text-slate-400 flex items-center gap-1.5">
               <Zap className="w-3.5 h-3.5 text-emerald-400" />
-              Packet Success
+              Segment Delivery
             </span>
-            <span className="font-bold text-emerald-300">{packetSuccess}%</span>
+            <span className="font-bold text-emerald-300">
+              {deliveryMetric.percentage === null ? 'NO DATA' : `${deliveryMetric.percentage.toFixed(2)}% · ${deliveryMetric.health}`}
+            </span>
           </div>
         </div>
       </div>
@@ -122,7 +121,7 @@ export function LinkHealthCard({
             <Orbit className="w-3 h-3 text-cyan-400" />
             ACTIVE REV
           </div>
-          <div className="text-sm font-bold text-cyan-300 mt-0.5">#{activeRevNum}</div>
+          <div className="text-sm font-bold text-cyan-300 mt-0.5">{activeRevNum === null ? '—' : `#${activeRevNum}`}</div>
         </div>
 
         <div className="p-2 rounded-lg bg-[#070D1C] border border-cyan-900/40">

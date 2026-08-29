@@ -10,7 +10,7 @@ interface SegmentMapCardProps {
 export function SegmentMapCard({
   currentSegment = 314,
   totalSegments = 430,
-  missingSegments = [312, 319, 325],
+  missingSegments = [],
 }: SegmentMapCardProps) {
   const pageSize = 40; // 4 rows of 10 columns
 

@@ -7,12 +7,7 @@ interface QueueCardProps {
 export function QueueCard({ onViewAll }: QueueCardProps) {
   const { queue } = useQueue();
 
-  const displayQueue = (queue && queue.length > 0) ? queue.slice(0, 4) : [
-    { id: 'IMG-000094', classification: 'CLEAR', priority: 1, progress_percent: 73 },
-    { id: 'IMG-000088', classification: 'CLEAR', priority: 1, progress_percent: 20 },
-    { id: 'IMG-000101', classification: 'CLOUDY', priority: 2, progress_percent: 0 },
-    { id: 'IMG-000085', classification: 'CLEAR', priority: 1, progress_percent: 0 },
-  ];
+  const displayQueue = queue.slice(0, 4);
 
   return (
     <div className="bg-[#0B132B]/80 backdrop-blur-md rounded-xl border border-cyan-900/30 p-5 flex flex-col justify-between hover:border-cyan-500/40 transition-colors shadow-lg shadow-black/40 h-full min-h-[220px]">
@@ -21,7 +16,11 @@ export function QueueCard({ onViewAll }: QueueCardProps) {
       </div>
 
       <div className="space-y-1.5 flex-1">
-        {displayQueue.map((item, idx) => {
+        {displayQueue.length === 0 ? (
+          <div className="h-full min-h-24 flex items-center justify-center rounded-lg border border-dashed border-slate-800 text-[11px] font-mono text-slate-500">
+            EMPTY QUEUE
+          </div>
+        ) : displayQueue.map((item, idx) => {
           const isClear = item.classification === 'CLEAR';
           const isCloudy = item.classification === 'CLOUDY';
           return (

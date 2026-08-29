@@ -7,14 +7,14 @@ interface ImageCardProps {
 }
 
 export function ImageCard({ image, onSelect }: ImageCardProps) {
-  const confidence = image.confidence ? (image.confidence * 100).toFixed(1) : '95.0';
+  const confidence = image.confidence === null ? null : (image.confidence * 100).toFixed(1);
   const isClear = image.classification === 'CLEAR';
   const isCloudy = image.classification === 'CLOUDY';
   const isNotVisible = image.classification === 'NOT_VISIBLE';
 
   const timeString = image.classified_at
-    ? new Date(image.classified_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) + ' UTC'
-    : '14:34:55 UTC';
+    ? new Date(image.classified_at).toLocaleTimeString('en-GB', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) + ' UTC'
+    : '—';
 
   // Seed variations based on Image ID char codes
   const seed = image.id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
@@ -113,7 +113,7 @@ export function ImageCard({ image, onSelect }: ImageCardProps) {
         </div>
 
         <div className="absolute top-2.5 right-2.5 bg-black/70 backdrop-blur-sm border border-slate-700/60 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold text-white">
-          {confidence}%
+          {confidence === null ? '—' : `${confidence}%`}
         </div>
 
         {/* Hover inspect hint */}

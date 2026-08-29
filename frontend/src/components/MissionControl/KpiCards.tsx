@@ -9,31 +9,26 @@ export function KpiCards() {
   const { status: revStatus } = useRevolutionStatus();
 
   // 1. Link Quality
-  const currentRssi = signalData?.stats?.rssi?.current ?? -67;
+  const currentRssi = signalData?.stats?.rssi?.current ?? null;
   const qualityLabel = getSignalQualityLabel(currentRssi);
-  const signalBars = Math.min(5, Math.max(1, Math.round(((currentRssi + 120) / 60) * 5)));
+  const signalBars = currentRssi === null ? 0 : Math.min(5, Math.max(1, Math.round(((currentRssi + 120) / 60) * 5)));
 
   // 2. AI Images (Useful = Clear + Cloudy kept)
-  const usefulCount =
-    (imagesStats?.by_classification?.CLEAR || 0) +
-    (imagesStats?.by_classification?.CLOUDY || 0);
-  const totalProcessed = imagesStats?.total || 87;
+  const usefulCount = imagesStats?.by_action?.keep ?? 0;
+  const totalProcessed = imagesStats?.total ?? 0;
 
   // 3. Downlinked
-  const completeCount = imagesStats?.complete || 0;
-  const totalCount = imagesStats?.total || 88;
-  const downlinkPct = totalCount > 0 ? ((completeCount / totalCount) * 100).toFixed(1) : '81.4';
+  const completeCount = imagesStats?.complete ?? 0;
+  const totalCount = imagesStats?.total ?? 0;
+  const downlinkPct = totalCount > 0 ? ((completeCount / totalCount) * 100).toFixed(1) : null;
 
   // 4. Next Contact
-  const timeRemaining = revStatus?.time_remaining || 0;
-  const timeUntilNext = revStatus?.time_until_next || 108;
+  const timeRemaining = revStatus?.time_remaining ?? null;
+  const timeUntilNext = revStatus?.time_until_next ?? null;
   const countdownSec = revStatus?.active ? timeRemaining : timeUntilNext;
-  const nextRevNum = revStatus?.next_revolution?.revolution_num || (revStatus?.revolution ? revStatus.revolution.revolution_num + 1 : 129);
+  const nextRevNum = revStatus?.next_revolution?.revolution_num ?? null;
 
-  const hours = String(Math.floor(countdownSec / 3600)).padStart(2, '0');
-  const mins = String(Math.floor((countdownSec % 3600) / 60)).padStart(2, '0');
-  const secs = String(Math.floor(countdownSec % 60)).padStart(2, '0');
-  const countdownFormatted = `${hours}:${mins}:${secs}`;
+  const countdownFormatted = countdownSec === null ? '—' : `${String(Math.floor(countdownSec / 3600)).padStart(2, '0')}:${String(Math.floor((countdownSec % 3600) / 60)).padStart(2, '0')}:${String(Math.floor(countdownSec % 60)).padStart(2, '0')}`;
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -90,7 +85,7 @@ export function KpiCards() {
         </div>
         <div className="my-2">
           <span className="text-2xl font-bold font-space text-cyan-400">
-            {downlinkPct}%
+            {downlinkPct === null ? '—' : `${downlinkPct}%`}
           </span>
         </div>
         <div className="text-xs text-slate-400 font-mono">
@@ -110,7 +105,7 @@ export function KpiCards() {
           </div>
         </div>
         <div className="text-xs text-slate-400 font-mono">
-          Rev #{nextRevNum}
+          {nextRevNum === null ? 'Rev —' : `Rev #${nextRevNum}`}
         </div>
       </div>
     </div>

@@ -16,7 +16,7 @@ function App() {
 
   // Initialize data source lifecycle
   useEffect(() => {
-    dataSource.connect().catch(console.error);
+    void dataSource.connect();
     return () => dataSource.disconnect();
   }, []);
 

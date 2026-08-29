@@ -14,23 +14,16 @@ export function SignalOverviewCard() {
 
   // Format telemetry points for the chart
   const points = signalData?.telemetry || [];
-  const chartData = (points.length > 0 ? points : []).map((t, idx) => {
-    const time = t.timestamp ? new Date(t.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : `14:${30 + idx}:00`;
+  const chartData = points.filter((t) => t.rssi !== null).map((t) => {
+    const time = new Date(t.timestamp).toLocaleTimeString('en-GB', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', second: '2-digit' });
     return {
       time,
-      rssi: t.rssi ?? -67 - (idx % 3) * 2,
+      rssi: t.rssi,
     };
   });
 
   // Fallback points if empty
-  const displayData = chartData.length > 0 ? chartData.slice(-15) : [
-    { time: '14:31', rssi: -72 },
-    { time: '14:32', rssi: -69 },
-    { time: '14:33', rssi: -65 },
-    { time: '14:34', rssi: -68 },
-    { time: '14:35', rssi: -67 },
-    { time: '14:36', rssi: -66 },
-  ];
+  const displayData = chartData.slice(-15);
 
   return (
     <div className="bg-[#0B132B]/80 backdrop-blur-md rounded-xl border border-cyan-900/30 p-5 flex flex-col justify-between hover:border-cyan-500/40 transition-colors shadow-lg shadow-black/40 h-full min-h-[220px]">
@@ -45,7 +38,7 @@ export function SignalOverviewCard() {
       </div>
 
       <div className="w-full h-36 mt-1">
-        <ResponsiveContainer width="100%" height="100%">
+        {displayData.length === 0 ? <div className="w-full h-full flex items-center justify-center text-xs font-mono text-slate-500">NO TELEMETRY</div> : <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={displayData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
             <defs>
               <linearGradient id="rssiGrad" x1="0" y1="0" x2="0" y2="1">
@@ -88,7 +81,7 @@ export function SignalOverviewCard() {
               fill="url(#rssiGrad)"
             />
           </AreaChart>
-        </ResponsiveContainer>
+        </ResponsiveContainer>}
       </div>
     </div>
   );

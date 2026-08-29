@@ -82,7 +82,7 @@ export function RetransmissionTable({
                   {/* Pass/Revolution */}
                   <td className="p-3.5 text-slate-300">
                     <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-cyan-300 font-semibold text-[10px]">
-                      REV #15
+                      —
                     </span>
                   </td>
 

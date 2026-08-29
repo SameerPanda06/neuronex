@@ -28,12 +28,26 @@ import type {
   ImageStatus,
 } from '../types';
 
-export type ConnectionStatusType = 'SIMULATION' | 'LIVE HARDWARE' | 'BACKEND OFFLINE';
+export type RestConnectionStatus = 'checking' | 'connected' | 'disconnected';
+export type SocketConnectionStatus = 'connecting' | 'connected' | 'reconnecting' | 'disconnected';
+export type TelemetryFreshness = 'current' | 'stale' | 'no_data';
+export type ConnectionStatusType =
+  | 'SIMULATION'
+  | 'LIVE HARDWARE'
+  | 'BACKEND OFFLINE'
+  | 'RECONNECTING'
+  | 'STALE TELEMETRY';
 
 export interface ConnectionState {
   connected: boolean;
   statusText: ConnectionStatusType;
   mode: 'mock' | 'live';
+  restStatus: RestConnectionStatus;
+  socketStatus: SocketConnectionStatus;
+  telemetryFreshness: TelemetryFreshness;
+  lastTelemetryAt: string | null;
+  lastImageEventAt: string | null;
+  lastSuccessfulRestAt: string | null;
 }
 
 export interface TelemetryDataSource {
@@ -76,7 +90,7 @@ export interface RetransmissionDataSource {
   complete(id: number): Promise<{ success: boolean; id: number }>;
   stats(): Promise<RetransmissionStats>;
   subscribeRequested(callback: (event: RetransmitRequestedEvent) => void): () => void;
-  subscribeAckConfirmed(callback: (event: { received: { retransmit_id?: number; image_id?: string } }) => void): () => void;
+  subscribeAckConfirmed(callback: (event: { received: { retransmit_id?: number; image_id?: string }; status?: 'acknowledged' | 'completed'; completed_at?: string }) => void): () => void;
 }
 
 export interface RevolutionsDataSource {
