@@ -17,6 +17,7 @@ interface MissionControlProps {
 export function MissionControl({ onNavigateTab }: MissionControlProps) {
   const { connected, mode } = useConnection();
   const isMock = mode === 'mock';
+  const isReplay = mode === 'replay';
   const { status: revStatus } = useRevolutionStatus();
   const [utcTime, setUtcTime] = useState<string>('');
 
@@ -56,7 +57,7 @@ export function MissionControl({ onNavigateTab }: MissionControlProps) {
           <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-semibold shadow-sm shadow-emerald-950">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <span>
-              {isMock ? 'SIMULATION LINK ACTIVE' : connected ? 'GROUND LINK ACTIVE' : 'LINK DISCONNECTED'}
+              {isMock ? 'SIMULATION LINK ACTIVE' : isReplay ? 'MISSION REPLAY ACTIVE' : connected ? 'GROUND LINK ACTIVE' : 'LINK DISCONNECTED'}
             </span>
           </div>
 
@@ -74,24 +75,24 @@ export function MissionControl({ onNavigateTab }: MissionControlProps) {
       <KpiCards />
 
       {/* Row 2: Current Downlink & AI Optimization */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        <div className="lg:col-span-7 xl:col-span-7">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-5">
+        <div className="xl:col-span-7">
           <CurrentDownlinkCard />
         </div>
-        <div className="lg:col-span-5 xl:col-span-5">
+        <div className="xl:col-span-5">
           <AiOptimizationCard />
         </div>
       </div>
 
       {/* Row 3: Signal Overview, Transmission Queue, Revolution */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-5">
-        <div className="lg:col-span-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-5">
+        <div className="xl:col-span-5">
           <SignalOverviewCard />
         </div>
-        <div className="lg:col-span-4">
+        <div className="xl:col-span-4">
           <QueueCard onViewAll={() => onNavigateTab?.('transmission')} />
         </div>
-        <div className="md:col-span-2 lg:col-span-3">
+        <div className="md:col-span-2 xl:col-span-3">
           <RevolutionCard />
         </div>
       </div>

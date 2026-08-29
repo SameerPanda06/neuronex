@@ -8,6 +8,7 @@ interface RetransmissionTableProps {
   onSelect: (retrans: Retransmission) => void;
   onRetransmit: (id: number) => Promise<void>;
   loading?: boolean;
+  disabled?: boolean;
 }
 
 export function RetransmissionTable({
@@ -16,6 +17,7 @@ export function RetransmissionTable({
   onSelect,
   onRetransmit,
   loading = false,
+  disabled = false,
 }: RetransmissionTableProps) {
   if (loading) {
     return (
@@ -42,7 +44,7 @@ export function RetransmissionTable({
   return (
     <div className="bg-[#0B132B]/85 backdrop-blur-md rounded-xl border border-cyan-900/30 overflow-hidden shadow-lg shadow-black/40">
       <div className="overflow-x-auto">
-        <table className="w-full text-left font-mono text-xs">
+        <table className="w-full min-w-[920px] text-left font-mono text-xs">
           <thead>
             <tr className="border-b border-slate-800 bg-[#070D1C] text-slate-400 font-semibold tracking-wider text-[11px]">
               <th className="p-3.5">IMAGE ID</th>
@@ -52,7 +54,7 @@ export function RetransmissionTable({
               <th className="p-3.5">RETRY</th>
               <th className="p-3.5">STATUS</th>
               <th className="p-3.5">REQUESTED</th>
-              <th className="p-3.5 text-right">ACTION</th>
+              <th className="p-3.5 text-right sticky right-0 z-10 bg-[#070D1C] border-l border-slate-800">ACTION</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/60">
@@ -142,11 +144,12 @@ export function RetransmissionTable({
                   </td>
 
                   {/* Action */}
-                  <td className="p-3.5 text-right" onClick={(e) => e.stopPropagation()}>
+                  <td className="p-3.5 text-right sticky right-0 bg-[#0B132B] group-hover:bg-[#0b1d35] border-l border-slate-800" onClick={(e) => e.stopPropagation()}>
                     {isPending ? (
                       <button
                         onClick={() => onRetransmit(r.id)}
-                        className="px-3 py-1 rounded-md bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[11px] font-bold transition-all flex items-center gap-1 ml-auto"
+                        disabled={disabled}
+                        className="px-3 py-1 rounded-md bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[11px] font-bold transition-all flex items-center gap-1 ml-auto disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <RotateCcw className="w-3 h-3" />
                         <span>RETRANSMIT</span>

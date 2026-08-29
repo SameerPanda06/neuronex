@@ -12,6 +12,7 @@ import { Signal, Radio } from 'lucide-react';
 import { getSignalQualityLabel, getSignalQualityClass } from '../../hooks/useTelemetry';
 import { cn } from '../../utils/format';
 import type { Telemetry } from '../../types';
+import { useMemo } from 'react';
 
 interface RssiChartCardProps {
   telemetry: Telemetry[];
@@ -20,7 +21,7 @@ interface RssiChartCardProps {
 
 export function RssiChartCard({ telemetry, loading }: RssiChartCardProps) {
   // Format data for Recharts (chronological order)
-  const chartData = telemetry
+  const chartData = useMemo(() => telemetry
     .slice(0, 35)
     .reverse()
     .filter((t) => t.rssi !== null)
@@ -33,7 +34,7 @@ export function RssiChartCard({ telemetry, loading }: RssiChartCardProps) {
         packet_type: t.packet_type,
         segment: t.segment_num === null ? 'TX' : `#${t.segment_num}`,
       };
-    });
+    }), [telemetry]);
 
   const latestRssi = telemetry.find((point) => point.rssi !== null)?.rssi ?? null;
 

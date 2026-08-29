@@ -45,14 +45,14 @@ export function OrbitWindows() {
       )}
 
       {/* 2. Top Hero + Orbit Tracking Visualizer Grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 2xl:grid-cols-12 gap-6">
         {/* Left 6-7 cols: Current Pass Hero */}
-        <div className="xl:col-span-7">
+        <div className="2xl:col-span-7 min-w-0">
           <CurrentPassHero status={revStatus} />
         </div>
 
         {/* Right 5-6 cols: Orbit Visualizer (Earth & Tracking Cone) */}
-        <div className="xl:col-span-5">
+        <div className="2xl:col-span-5 min-w-0">
           <OrbitVisualizer status={revStatus} />
         </div>
       </div>
@@ -62,6 +62,7 @@ export function OrbitWindows() {
         <div className="flex items-center gap-1.5 p-1 bg-[#070D1C] rounded-lg border border-slate-800/90">
           <button
             onClick={() => setViewMode('timeline')}
+            aria-pressed={viewMode === 'timeline'}
             className={cn(
               'px-3 py-1.5 rounded-md text-xs font-mono transition-all duration-150',
               viewMode === 'timeline'
@@ -73,6 +74,7 @@ export function OrbitWindows() {
           </button>
           <button
             onClick={() => setViewMode('calendar')}
+            aria-pressed={viewMode === 'calendar'}
             className={cn(
               'px-3 py-1.5 rounded-md text-xs font-mono transition-all duration-150',
               viewMode === 'calendar'

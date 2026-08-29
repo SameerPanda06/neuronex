@@ -15,6 +15,7 @@ interface AiGalleryProps {
 export function AiGallery({ onNavigateTab }: AiGalleryProps) {
   const { connected, mode } = useConnection();
   const isMock = mode === 'mock';
+  const isReplay = mode === 'replay';
   const { status: revStatus } = useRevolutionStatus();
   const { stats } = useImagesStats();
 
@@ -93,7 +94,7 @@ export function AiGallery({ onNavigateTab }: AiGalleryProps) {
           {/* Status Badge */}
           <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-semibold shadow-sm shadow-emerald-950">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>{isMock ? 'SIMULATION' : connected ? 'LIVE HARDWARE' : 'OFFLINE'}</span>
+            <span>{isMock ? 'SIMULATION' : isReplay ? 'MISSION REPLAY' : connected ? 'LIVE HARDWARE' : 'OFFLINE'}</span>
           </div>
 
           <div className="text-slate-300 font-medium hidden md:block">

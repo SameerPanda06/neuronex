@@ -95,6 +95,8 @@ export function RetransmissionDetailPanel({
             <button
               onClick={onClose}
               className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              aria-label="Close retransmission details"
+              title="Close retransmission details"
             >
               <X className="w-4 h-4" />
             </button>

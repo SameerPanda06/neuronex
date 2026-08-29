@@ -78,9 +78,9 @@ export function SignalAnalytics() {
       />
 
       {/* 4. Charts + Link Health Summary Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* Left 2 Columns: RSSI and SNR Time-Series Charts */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="xl:col-span-2 space-y-6 min-w-0">
           <RssiChartCard
             telemetry={telemetryPoints}
             loading={signalLoading && telemetryPoints.length === 0}
@@ -92,7 +92,7 @@ export function SignalAnalytics() {
         </div>
 
         {/* Right 1 Column: Link Health Summary */}
-        <div className="lg:col-span-1">
+        <div className="xl:col-span-1 min-w-0">
           <LinkHealthCard
             signalData={signalData}
             revolutionStatus={revStatus}

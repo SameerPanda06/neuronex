@@ -106,6 +106,8 @@ export function FilterBar({
               viewMode === 'grid' ? 'bg-cyan-500/20 text-cyan-300' : 'text-slate-400 hover:text-white'
             }`}
             title="Grid View"
+            aria-label="Grid view"
+            aria-pressed={viewMode === 'grid'}
           >
             <LayoutGrid className="w-3.5 h-3.5" />
           </button>
@@ -116,6 +118,8 @@ export function FilterBar({
               viewMode === 'list' ? 'bg-cyan-500/20 text-cyan-300' : 'text-slate-400 hover:text-white'
             }`}
             title="List View"
+            aria-label="List view"
+            aria-pressed={viewMode === 'list'}
           >
             <List className="w-3.5 h-3.5" />
           </button>

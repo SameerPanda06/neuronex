@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Orbit, Radio, Info } from 'lucide-react';
 import { cn } from '../../utils/format';
 import type { Revolution, RevolutionStatusResponse } from '../../types';
@@ -35,11 +35,10 @@ export function RevolutionSignalHeatmap({
   const activeProgressPercent = Math.max(0, Math.min(100, Math.round(((totalWindowSec - timeRemaining) / totalWindowSec) * 100)));
 
   // Generate 5 consecutive revolution passes ending at active/next
-  const baseRevNums = [activeRevNum - 4, activeRevNum - 3, activeRevNum - 2, activeRevNum - 1, activeRevNum];
   const numSlices = 12;
 
   // Generate heatmap rows
-  const rows = baseRevNums.map((revNum) => {
+  const rows = useMemo(() => [activeRevNum - 4, activeRevNum - 3, activeRevNum - 2, activeRevNum - 1, activeRevNum].map((revNum) => {
     const isCurrentActive = revNum === activeRevNum;
     const isPast = revNum < activeRevNum;
     const revObj = revolutions.find((r) => r.revolution_num === revNum);
@@ -92,7 +91,7 @@ export function RevolutionSignalHeatmap({
       cells,
       revObj,
     };
-  });
+  }), [activeProgressPercent, activeRevNum, revolutions, totalWindowSec]);
 
   // Color generator for cell
   const getCellBg = (cell: HeatmapCell) => {

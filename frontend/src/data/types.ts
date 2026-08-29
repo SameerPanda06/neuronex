@@ -33,6 +33,7 @@ export type SocketConnectionStatus = 'connecting' | 'connected' | 'reconnecting'
 export type TelemetryFreshness = 'current' | 'stale' | 'no_data';
 export type ConnectionStatusType =
   | 'SIMULATION'
+  | 'MISSION REPLAY'
   | 'LIVE HARDWARE'
   | 'BACKEND OFFLINE'
   | 'RECONNECTING'
@@ -41,7 +42,7 @@ export type ConnectionStatusType =
 export interface ConnectionState {
   connected: boolean;
   statusText: ConnectionStatusType;
-  mode: 'mock' | 'live';
+  mode: 'mock' | 'live' | 'replay';
   restStatus: RestConnectionStatus;
   socketStatus: SocketConnectionStatus;
   telemetryFreshness: TelemetryFreshness;

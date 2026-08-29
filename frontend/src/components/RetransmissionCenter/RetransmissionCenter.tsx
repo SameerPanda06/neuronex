@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { RetransmissionHeader } from './RetransmissionHeader';
 import { RetransmissionKpiStrip } from './RetransmissionKpiStrip';
 import { RetransmissionTabs, type RetransmissionFilter } from './RetransmissionTabs';
@@ -16,17 +16,20 @@ export function RetransmissionCenter() {
 
   const { connected, mode } = useConnection();
   const { retransmissions: allList, loading, acknowledge } = useRetransmissions();
-  const retransmissions = filter === 'all' ? allList : allList.filter((item) => item.status === filter);
+  const retransmissions = useMemo(
+    () => filter === 'all' ? allList : allList.filter((item) => item.status === filter),
+    [allList, filter],
+  );
 
   const isOffline = mode === 'live' && !connected;
 
   // Compute counts for tabs
-  const counts = {
+  const counts = useMemo(() => ({
     all: allList.length,
     pending: allList.filter((r) => r.status === 'pending').length,
     acknowledged: allList.filter((r) => r.status === 'acknowledged').length,
     completed: allList.filter((r) => r.status === 'completed').length,
-  };
+  }), [allList]);
 
   useEffect(() => {
     if (!selectedRetrans) return;
@@ -83,20 +86,21 @@ export function RetransmissionCenter() {
       </div>
 
       {/* 4. Main Two-Column Layout: Table + Detail Panel */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 2xl:grid-cols-12 gap-6">
         {/* Left Column: Retransmissions Engineering Table (7 cols) */}
-        <div className="xl:col-span-7 space-y-4">
+        <div className="2xl:col-span-7 space-y-4 min-w-0">
           <RetransmissionTable
             retransmissions={retransmissions}
             selectedId={activeSelected?.id ?? null}
             onSelect={setSelectedRetrans}
             onRetransmit={handleRetransmit}
             loading={loading && retransmissions.length === 0}
+            disabled={isProcessing}
           />
         </div>
 
         {/* Right Column: Selected Retransmission Detail Panel (5 cols) */}
-        <div className="xl:col-span-5">
+        <div className="2xl:col-span-5 min-w-0">
           <RetransmissionDetailPanel
             retransmission={activeSelected}
             onRetransmit={handleRetransmit}

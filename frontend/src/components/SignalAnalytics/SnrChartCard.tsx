@@ -12,6 +12,7 @@ import { Activity, Radio } from 'lucide-react';
 import { getSnrQualityLabel, getSnrQualityClass } from '../../hooks/useTelemetry';
 import { cn } from '../../utils/format';
 import type { Telemetry } from '../../types';
+import { useMemo } from 'react';
 
 interface SnrChartCardProps {
   telemetry: Telemetry[];
@@ -20,7 +21,7 @@ interface SnrChartCardProps {
 
 export function SnrChartCard({ telemetry, loading }: SnrChartCardProps) {
   // Format data for Recharts
-  const chartData = telemetry
+  const chartData = useMemo(() => telemetry
     .slice(0, 35)
     .reverse()
     .filter((t) => t.snr !== null)
@@ -31,9 +32,12 @@ export function SnrChartCard({ telemetry, loading }: SnrChartCardProps) {
         snr: parseFloat(Number(t.snr).toFixed(1)),
         packet_type: t.packet_type,
       };
-    });
+    }), [telemetry]);
 
-  const snrValues = telemetry.map((t) => t.snr).filter((v): v is number => v !== null);
+  const snrValues = useMemo(
+    () => telemetry.map((t) => t.snr).filter((v): v is number => v !== null),
+    [telemetry],
+  );
   const latestSnr = snrValues[0] ?? null;
   const minSnr = snrValues.length > 0 ? Math.min(...snrValues) : null;
   const maxSnr = snrValues.length > 0 ? Math.max(...snrValues) : null;

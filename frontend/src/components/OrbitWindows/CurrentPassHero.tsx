@@ -10,7 +10,9 @@ export function CurrentPassHero({ status }: CurrentPassHeroProps) {
   const isActive = status?.active && activeRev !== null;
   const timeRemaining = status?.time_remaining ?? 0;
   const totalWindow = activeRev?.window_duration_sec ?? 0;
-  const progressPercent = Math.max(0, Math.min(100, Math.round(((totalWindow - timeRemaining) / totalWindow) * 100)));
+  const progressPercent = totalWindow > 0
+    ? Math.max(0, Math.min(100, Math.round(((totalWindow - timeRemaining) / totalWindow) * 100)))
+    : 0;
 
   const mins = String(Math.floor(timeRemaining / 60)).padStart(2, '0');
   const secs = String(timeRemaining % 60).padStart(2, '0');

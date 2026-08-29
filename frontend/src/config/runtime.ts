@@ -1,4 +1,4 @@
-export type DataMode = 'mock' | 'live';
+export type DataMode = 'mock' | 'live' | 'replay';
 
 export interface RuntimeConfig {
   dataMode: DataMode;
@@ -6,10 +6,13 @@ export interface RuntimeConfig {
   socketUrl: string;
   isMockMode: boolean;
   isLiveMode: boolean;
+  isReplayMode: boolean;
+  replaySpeed: number;
 }
 
 const rawMode = (import.meta.env.VITE_DATA_MODE || 'mock').toLowerCase().trim();
-const dataMode: DataMode = rawMode === 'live' ? 'live' : 'mock';
+const dataMode: DataMode = rawMode === 'live' || rawMode === 'replay' ? rawMode : 'mock';
+const configuredReplaySpeed = Number(import.meta.env.VITE_REPLAY_SPEED);
 
 export const runtimeConfig: RuntimeConfig = {
   dataMode,
@@ -17,6 +20,8 @@ export const runtimeConfig: RuntimeConfig = {
   socketUrl: import.meta.env.VITE_WS_URL || 'ws://localhost:5000',
   isMockMode: dataMode === 'mock',
   isLiveMode: dataMode === 'live',
+  isReplayMode: dataMode === 'replay',
+  replaySpeed: Number.isFinite(configuredReplaySpeed) && configuredReplaySpeed > 0 ? configuredReplaySpeed : 1,
 };
 
 export const {
@@ -25,4 +30,6 @@ export const {
   socketUrl: SOCKET_URL,
   isMockMode: IS_MOCK_MODE,
   isLiveMode: IS_LIVE_MODE,
+  isReplayMode: IS_REPLAY_MODE,
+  replaySpeed: REPLAY_SPEED,
 } = runtimeConfig;

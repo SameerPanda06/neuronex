@@ -39,12 +39,12 @@ export function ImageDetailModal({
     image.status === 'transmitting' || image.status === 'queued';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
-      <div className="bg-[#070D1C] border border-cyan-500/40 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl shadow-cyan-950/60 flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in">
+      <div role="dialog" aria-modal="true" aria-labelledby="image-detail-title" className="bg-[#070D1C] border border-cyan-500/40 rounded-2xl w-full max-w-5xl max-h-[92vh] overflow-y-auto shadow-2xl shadow-cyan-950/60 flex flex-col">
         {/* Modal Header */}
         <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between sticky top-0 bg-[#070D1C]/95 backdrop-blur-md z-10">
           <div className="flex items-center gap-3">
-            <div className="text-xl font-bold font-space text-white tracking-wide">
+            <div id="image-detail-title" className="text-xl font-bold font-space text-white tracking-wide">
               {image.id}
             </div>
             <span
@@ -67,6 +67,8 @@ export function ImageDetailModal({
             type="button"
             onClick={onClose}
             className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+            aria-label="Close image details"
+            title="Close image details"
           >
             <X className="w-5 h-5" />
           </button>
@@ -109,6 +111,7 @@ export function ImageDetailModal({
                 onClick={() => setZoom((z) => Math.max(0.75, z - 0.25))}
                 className="p-1 rounded hover:bg-slate-800 text-slate-300 hover:text-white"
                 title="Zoom Out"
+                aria-label="Zoom out"
               >
                 <ZoomOut className="w-4 h-4" />
               </button>
@@ -120,6 +123,7 @@ export function ImageDetailModal({
                 onClick={() => setZoom((z) => Math.min(2.5, z + 0.25))}
                 className="p-1 rounded hover:bg-slate-800 text-slate-300 hover:text-white"
                 title="Zoom In"
+                aria-label="Zoom in"
               >
                 <ZoomIn className="w-4 h-4" />
               </button>
@@ -128,6 +132,7 @@ export function ImageDetailModal({
                 onClick={() => setZoom(1)}
                 className="p-1 rounded hover:bg-slate-800 text-slate-300 hover:text-white ml-1"
                 title="Reset Zoom"
+                aria-label="Reset zoom"
               >
                 <RotateCcw className="w-4 h-4" />
               </button>

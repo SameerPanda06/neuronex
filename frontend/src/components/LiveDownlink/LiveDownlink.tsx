@@ -14,6 +14,7 @@ import { useConnection } from '../../hooks/useConnection';
 export function LiveDownlink() {
   const { connected, mode } = useConnection();
   const isMock = mode === 'mock';
+  const isReplay = mode === 'replay';
   const { images } = useImages({ status: 'transmitting', limit: 1 });
   const { queue } = useQueue();
   const { retransmissions } = useRetransmissions({ status: 'pending' });
@@ -66,7 +67,7 @@ export function LiveDownlink() {
           <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-semibold shadow-sm shadow-emerald-950">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <span>
-              {isMock ? 'SIMULATION' : connected ? 'LIVE' : 'OFFLINE'}
+              {isMock ? 'SIMULATION' : isReplay ? 'MISSION REPLAY' : connected ? 'LIVE' : 'OFFLINE'}
             </span>
           </div>
 
@@ -81,9 +82,9 @@ export function LiveDownlink() {
       </div>
 
       {/* Main Grid: Left Column & Right Column */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
         {/* Left Column: Active Image & Signal Metrics */}
-        <div className="lg:col-span-5 space-y-5">
+        <div className="xl:col-span-5 space-y-5">
           <ActiveImageCard image={activeImage} />
           <SignalMetricsCard
             rssiOverride={activeImage?.rssi}
@@ -94,7 +95,7 @@ export function LiveDownlink() {
         </div>
 
         {/* Right Column: Transmission Progress, Segment Map, Retrans Alert, Upcoming Queue */}
-        <div className="lg:col-span-7 space-y-5">
+        <div className="xl:col-span-7 space-y-5">
           <TransmissionProgressCard
             image={activeImage}
             missingCount={missingSegments.length}

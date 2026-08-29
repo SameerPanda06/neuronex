@@ -14,6 +14,7 @@ import { Zap, Layers, CheckCircle2, AlertOctagon } from 'lucide-react';
 import { formatBps } from '../../utils/format';
 import type { Telemetry, RetransmissionStats, PacketType } from '../../types';
 import type { DeliveryMetric } from '../../lib/missionMetrics';
+import { useMemo } from 'react';
 
 interface ThroughputPacketPanelProps {
   telemetry: Telemetry[];
@@ -30,7 +31,7 @@ export function ThroughputPacketPanel({
 }: ThroughputPacketPanelProps) {
   // Derive throughput time-series points
   const baseRate = activeThroughput ?? null;
-  const throughputData = telemetry
+  const throughputData = useMemo(() => telemetry
     .slice(0, 30)
     .reverse()
     .map((t) => {
@@ -41,34 +42,20 @@ export function ThroughputPacketPanel({
         rate,
         rateFormatted: formatBps(rate),
       };
-    });
+    }), [telemetry, baseRate]);
 
   // Calculate packet types distribution
-  const packetTypeCounts: Record<PacketType, number> = {
-    DATA: 0,
-    ACK: 0,
-    TELEMETRY: 0,
-    NACK: 0,
-    META: 0,
-    STATUS: 0,
-    DONE: 0,
-  };
-
-  telemetry.forEach((t) => {
-    if (t.packet_type && packetTypeCounts[t.packet_type] !== undefined) {
-      packetTypeCounts[t.packet_type]++;
-    } else {
-      packetTypeCounts.DATA++;
-    }
-  });
-
-  const packetDistributionData = [
-    { type: 'DATA', count: packetTypeCounts.DATA, color: '#06b6d4' },
-    { type: 'ACK', count: packetTypeCounts.ACK, color: '#10b981' },
-    { type: 'TELEM', count: packetTypeCounts.TELEMETRY, color: '#14b8a6' },
-    { type: 'META', count: packetTypeCounts.META, color: '#8b5cf6' },
-    { type: 'NACK', count: packetTypeCounts.NACK, color: '#f43f5e' },
-  ];
+  const packetDistributionData = useMemo(() => {
+    const counts: Record<PacketType, number> = { DATA: 0, ACK: 0, TELEMETRY: 0, NACK: 0, META: 0, STATUS: 0, DONE: 0 };
+    telemetry.forEach((item) => { counts[item.packet_type] += 1; });
+    return [
+      { type: 'DATA', count: counts.DATA, color: '#06b6d4' },
+      { type: 'ACK', count: counts.ACK, color: '#10b981' },
+      { type: 'TELEM', count: counts.TELEMETRY, color: '#14b8a6' },
+      { type: 'META', count: counts.META, color: '#8b5cf6' },
+      { type: 'NACK', count: counts.NACK, color: '#f43f5e' },
+    ];
+  }, [telemetry]);
 
   const totalPackets = telemetry.length;
   const retransmitCount = retransStats?.total ?? 0;
