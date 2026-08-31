@@ -4,13 +4,15 @@ import type {
   Image, ImagesResponse, ImageProgress, ImagesStats,
   TelemetryResponse, TelemetryHistory, SignalQuality,
   QueueResponse, ReorderRequest, NextImageResponse,
-  RetransmissionsResponse, RetransmissionAckRequest, RetransmissionAckResponse,
+  RetransmissionsResponse, RetransmissionAckRequest, RetransmissionAckResponse, RetransmissionStats,
   RevolutionsResponse, RevolutionStats, ScheduleRevolutionRequest,
-  RevolutionStatusResponse
+  RevolutionStatusResponse, Revolution
 } from '../types';
 
+import { API_BASE_URL } from '../config/runtime';
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000',
+  baseURL: API_BASE_URL,
   timeout: 10000,
   headers: { 'Content-Type': 'application/json' },
 });
@@ -23,10 +25,7 @@ api.interceptors.request.use((config) => {
 // Response interceptor for error handling
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    console.error('API Error:', error.response?.data || error.message);
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 // Images API
@@ -114,9 +113,26 @@ export const revolutionsApi = {
   status: () => api.get<RevolutionStatusResponse>('/api/revolutions/status'),
 };
 
+// Schedule API
+export const scheduleApi = {
+  state: () => api.get('/api/schedule/state'),
+  nextRevolution: () => api.get('/api/schedule/next-revolution'),
+  window: () => api.get('/api/schedule/window'),
+  config: () => api.get('/api/schedule/config'),
+};
+
+// Command API
+export const commandApi = {
+  setPriority: (priority: number) => api.post('/api/command/priority', { priority }),
+  reset: () => api.post('/api/command/reset', {}),
+  requestStatus: () => api.post('/api/command/status', {}),
+  getQueue: () => api.get('/api/command/queue'),
+};
+
 // Health
 export const healthApi = {
   check: () => api.get('/api/health'),
 };
 
 export default api;
+

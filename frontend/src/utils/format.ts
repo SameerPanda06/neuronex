@@ -1,6 +1,7 @@
 // Utility Functions
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import type { ImageStatus } from '../types';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -65,4 +66,63 @@ export function truncate(str: string | null, length: number): string {
 
 export function generateId(): string {
   return Math.random().toString(36).substring(2, 15);
+}
+
+export function getClassificationColor(classification: string | null): string {
+  switch (classification) {
+    case 'CLEAR':
+      return 'bg-green-500 text-white';
+    case 'CLOUDY':
+      return 'bg-yellow-500 text-white';
+    case 'NOT_VISIBLE':
+      return 'bg-red-500 text-white';
+    default:
+      return 'bg-gray-500 text-white';
+  }
+}
+
+export function getClassificationIcon(classification: string | null): string {
+  switch (classification) {
+    case 'CLEAR':
+      return '☀️';
+    case 'CLOUDY':
+      return '☁️';
+    case 'NOT_VISIBLE':
+      return '🌫️';
+    default:
+      return '❓';
+  }
+}
+
+export function getStatusColor(status: ImageStatus): string {
+  switch (status) {
+    case 'complete':
+      return 'bg-green-500 text-white';
+    case 'transmitting':
+      return 'bg-blue-500 text-white animate-pulse';
+    case 'queued':
+    case 'classified':
+      return 'bg-indigo-500 text-white';
+    case 'pending':
+      return 'bg-gray-500 text-white';
+    case 'discarded':
+      return 'bg-red-500 text-white';
+    case 'failed':
+      return 'bg-red-700 text-white';
+    default:
+      return 'bg-gray-500 text-white';
+  }
+}
+
+export function getActionColor(action: string | null): string {
+  switch (action) {
+    case 'keep':
+      return 'text-green-400';
+    case 'defer':
+      return 'text-yellow-400';
+    case 'discard':
+      return 'text-red-400';
+    default:
+      return 'text-gray-400';
+  }
 }

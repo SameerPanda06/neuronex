@@ -30,8 +30,9 @@ def create_app():
 
     # Initialize extensions
     db.init_app(app)
-    CORS(app, origins="*")
-    socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
+    CORS(app, resources={r"/api/*": {"origins": ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000", "http://127.0.0.1:3000", "*"]}}, supports_credentials=True)
+    socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
+
 
     # Create tables
     with app.app_context():
@@ -44,12 +45,16 @@ def create_app():
     from api.queue import queue_bp
     from api.retransmit import retransmit_bp
     from api.revolutions import revolutions_bp
+    from api.command import bp as command_bp
+    from api.schedule import bp as schedule_bp
 
-    app.register_blueprint(images_bp, url_prefix="/api")
+    app.register_blueprint(images_bp, url_prefix="/api/images")
     app.register_blueprint(telemetry_bp, url_prefix="/api")
     app.register_blueprint(queue_bp, url_prefix="/api")
     app.register_blueprint(retransmit_bp, url_prefix="/api")
     app.register_blueprint(revolutions_bp, url_prefix="/api")
+    app.register_blueprint(command_bp)  # already has /api/command prefix
+    app.register_blueprint(schedule_bp)  # already has /api/schedule prefix
 
     # Health check
     @app.route("/api/health")
@@ -60,36 +65,14 @@ def create_app():
             "version": "1.0.0"
         })
 
-    # SocketIO events
-    @socketio.on("connect")
-    def handle_connect():
-        logger.info(f"Client connected: {request.sid}")
-        emit("connected", {"sid": request.sid, "timestamp": datetime.utcnow().isoformat()})
+    # Register SocketIO events & rooms
+    from websocket.events import register_socketio_events
+    register_socketio_events(socketio)
 
-    @socketio.on("disconnect")
-    def handle_disconnect():
-        logger.info(f"Client disconnected: {request.sid}")
-
-    @socketio.on("retransmit:ack")
-    def handle_retransmit_ack(data):
-        """Client acknowledges/trigger retransmission."""
-        logger.info(f"Retransmit ack from client: {data}")
-        # TODO: Forward to Pi TX via serial
-        emit("retransmit:ack:confirmed", {"received": data}, broadcast=True)
-
-    @socketio.on("queue:reorder")
-    def handle_queue_reorder(data):
-        """Client reorders transmission queue."""
-        logger.info(f"Queue reorder: {data}")
-        # TODO: Update queue in database
-        emit("queue:reordered", {"queue": data}, broadcast=True)
-
-    @socketio.on("image:discard")
-    def handle_image_discard(data):
-        """Client marks image as discarded."""
-        logger.info(f"Image discard: {data}")
-        # TODO: Update image status
-        emit("image:discarded", {"received": data}, broadcast=True)
+    # Initialize Serial Receiver (handles hardware failure gracefully)
+    from services.receiver import init_receiver
+    receiver = init_receiver(config.SERIAL_PORT, config.SERIAL_BAUDRATE, socketio, app)
+    receiver.start()
 
     # Background task: emit telemetry updates
     def emit_telemetry_loop():
@@ -101,7 +84,7 @@ def create_app():
                     # Get latest telemetry
                     latest = Telemetry.query.order_by(Telemetry.timestamp.desc()).first()
                     if latest:
-                        image = Image.query.get(latest.image_id)
+                        image = db.session.get(Image, latest.image_id)
                         socketio.emit("telemetry:update", {
                             "image_id": latest.image_id,
                             "mission_id": latest.mission_id,
@@ -113,7 +96,7 @@ def create_app():
                             "latency_ms": latest.latency_ms,
                             "timestamp": latest.timestamp.isoformat(),
                             "progress": image.progress_percent if image else 0,
-                        })
+                        }, room="telemetry")
             except Exception as e:
                 logger.error(f"Telemetry emit error: {e}")
             time.sleep(0.5)  # 2 Hz updates
@@ -121,7 +104,34 @@ def create_app():
     # Start background task
     socketio.start_background_task(emit_telemetry_loop)
 
+    # Start scheduler thread (emits schedule state every second)
+    from services.scheduler import start_scheduler_thread
+    start_scheduler_thread(socketio)
+
+    # Start command sender thread (sends queued PKT_CMD to ESP32 via serial)
+    def send_commands_loop():
+        import time
+        from services.receiver import get_receiver
+        from api.command import pop_next_command, has_pending_commands
+
+        while True:
+            try:
+                if has_pending_commands():
+                    cmd_packet = pop_next_command()
+                    if cmd_packet:
+                        recv = get_receiver()
+                        if recv and recv.serial_conn and recv.serial_conn.is_open:
+                            # Send raw command packet (will be framed by ESP32 for LoRa TX)
+                            recv.serial_conn.write(cmd_packet)
+                            logger.info(f"Sent CMD to ESP32: {cmd_packet.hex()}")
+            except Exception as e:
+                logger.error(f"Command send error: {e}")
+            time.sleep(0.5)
+
+    socketio.start_background_task(send_commands_loop)
+
     return app, socketio
+
 
 
 app, socketio = create_app()
@@ -130,4 +140,4 @@ app, socketio = create_app()
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "5000"))
     logger.info(f"Starting Neuronex Backend on port {port}")
-    socketio.run(app, host="0.0.0.0", port=port, debug=config.FLASK_DEBUG)
+    socketio.run(app, host="0.0.0.0", port=port, debug=config.FLASK_DEBUG, allow_unsafe_werkzeug=True)

@@ -1,40 +1,41 @@
 // Queue Hooks
-import { useState, useEffect, useCallback } from 'react';
-import { queueApi } from '../services/api';
-import { socketService } from '../services/socket';
-import type { Image, QueueResponse, ReorderRequest, ImageStatus } from '../types';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { dataSource } from '../data';
+import type { Image, ReorderRequest } from '../types';
+import { useResilientPolling } from './useResilientPolling';
 
 export function useQueue() {
   const [queue, setQueue] = useState<Image[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const lastSocketUpdate = useRef(0);
 
   const fetch = useCallback(async () => {
+    const requestedAt = Date.now();
     try {
-      const res = await queueApi.get();
-      setQueue(res.data.queue);
+      const res = await dataSource.queue.get();
+      setQueue((current) => lastSocketUpdate.current > requestedAt ? current : res.queue);
       setError(null);
-    } catch (e) {
+      return true;
+    } catch {
       setError('Failed to fetch queue');
+      return false;
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    fetch();
-    const interval = setInterval(fetch, 5000);
-    return () => clearInterval(interval);
-  }, [fetch]);
+  useResilientPolling(fetch, 10_000);
 
-  // Real-time queue updates
+  // Real-time queue updates via DataSource
   useEffect(() => {
-    const unsubscribe = socketService.on('queue:update', (data: { queue: Image[] }) => {
+    const unsubscribe = dataSource.queue.subscribeQueue((data: { queue: Image[] }) => {
+      lastSocketUpdate.current = Date.now();
       setQueue(data.queue);
     });
 
-    const unsubscribeReordered = socketService.on('queue:reordered', (data: { queue: ReorderRequest[] }) => {
-      // Update local queue order
+    const unsubscribeReordered = dataSource.queue.subscribeReordered((data: { queue: ReorderRequest[] }) => {
+      lastSocketUpdate.current = Date.now();
       setQueue((prev) => {
         const orderMap = new Map(data.queue.map((item, index) => [item.id, index]));
         return [...prev].sort((a, b) => {
@@ -53,8 +54,8 @@ export function useQueue() {
 
   const reorder = useCallback(async (items: ReorderRequest[]) => {
     try {
-      await queueApi.reorder(items);
-    } catch (e) {
+      await dataSource.queue.reorder(items);
+    } catch {
       setError('Failed to reorder queue');
     }
   }, []);
@@ -68,9 +69,9 @@ export function useNextImage() {
 
   const fetch = useCallback(async () => {
     try {
-      const res = await queueApi.next();
-      setData(res.data);
-    } catch (e) {
+      const res = await dataSource.queue.next();
+      setData(res);
+    } catch {
       setData({ next: null, message: 'Error fetching next image' });
     } finally {
       setLoading(false);

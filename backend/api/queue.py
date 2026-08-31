@@ -27,8 +27,9 @@ def get_queue():
 def reorder_queue():
     """Reorder transmission queue (drag-drop from dashboard)."""
     data = request.get_json()
-    if not data or not isinstance(data, list):
+    if data is None or not isinstance(data, list):
         return jsonify({"error": "Expected list of {id, priority}"}), 400
+
 
     updated = []
     for item in data:
@@ -37,7 +38,7 @@ def reorder_queue():
         if not image_id or priority is None:
             continue
 
-        image = Image.query.get(image_id)
+        image = db.session.get(Image, image_id)
         if image and image.status in [ImageStatus.CLASSIFIED.value, ImageStatus.QUEUED.value]:
             image.priority = priority
             image.status = ImageStatus.QUEUED.value
@@ -55,6 +56,7 @@ def get_next_image():
     ).order_by(asc(Image.priority), asc(Image.created_at)).first()
 
     if not next_image:
-        return jsonify({"next": None, "message": "No images in queue"})
+        return jsonify({"next": None, "image": None, "message": "No images in queue"})
 
-    return jsonify({"next": next_image.to_dict()})
+    img_dict = next_image.to_dict()
+    return jsonify({"next": img_dict, "image": img_dict})

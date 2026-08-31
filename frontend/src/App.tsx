@@ -1,122 +1,91 @@
-// Main App Component
-import React, { useState } from 'react';
-import { Layout } from './components/Layout';
-import { TransmissionView } from './components/TransmissionView';
-import { MLGallery } from './components/MLGallery';
-import { MetricsPanel } from './components/MetricsPanel';
-import { RetransmissionQueue } from './components/RetransmissionQueue';
-import { ImageViewer } from './components/ImageViewer';
-import { RevolutionTimeline } from './components/RevolutionTimeline';
-import { socketService } from './services/socket';
+import { lazy, Suspense, useState, useEffect } from 'react';
+import { Layout, type NavTabId } from './components/Layout';
+import { dataSource } from './data';
+import { Settings } from 'lucide-react';
 
-function App() {
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+const MissionControl = lazy(() => import('./components/MissionControl/MissionControl').then((module) => ({ default: module.MissionControl })));
+const LiveDownlink = lazy(() => import('./components/LiveDownlink/LiveDownlink').then((module) => ({ default: module.LiveDownlink })));
+const AiGallery = lazy(() => import('./components/AiGallery/AiGallery').then((module) => ({ default: module.AiGallery })));
+const SignalAnalytics = lazy(() => import('./components/SignalAnalytics/SignalAnalytics').then((module) => ({ default: module.SignalAnalytics })));
+const RetransmissionCenter = lazy(() => import('./components/RetransmissionCenter/RetransmissionCenter').then((module) => ({ default: module.RetransmissionCenter })));
+const OrbitWindows = lazy(() => import('./components/OrbitWindows/OrbitWindows').then((module) => ({ default: module.OrbitWindows })));
+const Diagnostics = lazy(() => import('./components/Diagnostics').then((module) => ({ default: module.Diagnostics })));
 
-  // Initialize socket connection
-  React.useEffect(() => {
-    socketService.connect().catch(console.error);
-    return () => socketService.disconnect();
-  }, []);
-
+function ScreenLoading() {
   return (
-    <Layout>
-      <div className="space-y-8 max-w-full">
-        {/* Transmission View - Always visible at top */}
-        <TransmissionView />
-
-        {/* Tabbed Content */}
-        <div className="bg-space-900/50 rounded-xl border border-white/10 overflow-hidden">
-          <Tabs defaultValue="gallery">
-            <TabsList className="grid w-full grid-cols-4 border-b border-white/10">
-              <TabsTrigger value="gallery" className="py-3">
-                <span className="flex items-center gap-2">
-                  <span className="w-4 h-4">📸</span>
-                  ML Gallery
-                </span>
-              </TabsTrigger>
-              <TabsTrigger value="metrics" className="py-3">
-                <span className="flex items-center gap-2">
-                  <span className="w-4 h-4">📊</span>
-                  Signal Metrics
-                </span>
-              </TabsTrigger>
-              <TabsTrigger value="retransmit" className="py-3">
-                <span className="flex items-center gap-2">
-                  <span className="w-4 h-4">🔄</span>
-                  Retransmissions
-                </span>
-              </TabsTrigger>
-              <TabsTrigger value="revolutions" className="py-3">
-                <span className="flex items-center gap-2">
-                  <span className="w-4 h-4">📅</span>
-                  Revolutions
-                </span>
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="gallery" className="p-6">
-              <MLGallery onImageClick={setSelectedImage} />
-            </TabsContent>
-
-            <TabsContent value="metrics" className="p-6">
-              <MetricsPanel />
-            </TabsContent>
-
-            <TabsContent value="retransmit" className="p-6">
-              <RetransmissionQueue />
-            </TabsContent>
-
-            <TabsContent value="revolutions" className="p-6">
-              <RevolutionTimeline />
-            </TabsContent>
-          </Tabs>
-        </div>
+    <div className="min-h-[240px] rounded-xl border border-cyan-900/30 bg-[#0B132B]/60 flex items-center justify-center">
+      <div className="flex items-center gap-2 text-xs font-mono tracking-wider text-cyan-400">
+        <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+        LOADING MISSION VIEW
       </div>
-
-      {/* Image Viewer Modal */}
-      <ImageViewer imageId={selectedImage} onClose={() => setSelectedImage(null)} />
-    </Layout>
-  );
-}
-
-// Simple Tabs implementation
-function Tabs({ children, defaultValue }: { children: React.ReactNode; defaultValue: string }) {
-  const [value, setValue] = useState(defaultValue);
-  return (
-    <div>
-      {React.Children.map(children, child => {
-        if (!React.isValidElement(child)) return child;
-        return React.cloneElement(child as React.ReactElement<any>, { value, onValueChange: setValue });
-      })}
     </div>
   );
 }
 
-function TabsList({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={className} role="tablist">{children}</div>;
-}
+function App() {
+  const [activeTab, setActiveTab] = useState<NavTabId>('mission-control');
 
-function TabsTrigger({ value, children, className, onValueChange }: { value: string; children: React.ReactNode; className?: string; onValueChange: (v: string) => void }) {
-  const isActive = false; // Will be set by parent
+  // Initialize data source lifecycle
+  useEffect(() => {
+    void dataSource.connect();
+    return () => dataSource.disconnect();
+  }, []);
+
   return (
-    <button
-      role="tab"
-      aria-selected={isActive}
-      className={`flex items-center justify-center font-medium text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-neuronex-500 ${
-        isActive
-          ? 'bg-neuronex-500/20 text-neuronex-400 border-b-2 border-neuronex-500'
-          : 'text-neuronex-500 hover:text-white hover:bg-white/5'
-      } ${className || ''}`}
-      onClick={() => onValueChange(value)}
-    >
-      {children}
-    </button>
-  );
-}
+    <Layout activeTab={activeTab} onTabChange={setActiveTab}>
+      <Suspense fallback={<ScreenLoading />}>
+      {activeTab === 'mission-control' && (
+        <MissionControl onNavigateTab={setActiveTab} />
+      )}
 
-function TabsContent({ value, children, className }: { value: string; children: React.ReactNode; className?: string }) {
-  // In a real implementation, this would be controlled by parent Tabs
-  return <div className={className} role="tabpanel">{children}</div>;
+      {activeTab === 'transmission' && (
+        <div className="space-y-6">
+          <LiveDownlink />
+        </div>
+      )}
+
+      {activeTab === 'ml-gallery' && (
+        <div className="space-y-6">
+          <AiGallery
+            onNavigateTab={(tab) => setActiveTab(tab as NavTabId)}
+          />
+        </div>
+      )}
+
+      {activeTab === 'metrics' && (
+        <div className="space-y-6">
+          <SignalAnalytics />
+        </div>
+      )}
+
+      {activeTab === 'retransmit' && (
+        <div className="space-y-6">
+          <RetransmissionCenter />
+        </div>
+      )}
+
+      {activeTab === 'revolutions' && (
+        <div className="space-y-6">
+          <OrbitWindows />
+        </div>
+      )}
+
+      {activeTab === 'settings' && (
+        <div className="bg-[#0B132B]/80 backdrop-blur-md rounded-xl border border-cyan-900/30 p-8 text-center max-w-lg mx-auto mt-12">
+          <Settings className="w-12 h-12 text-cyan-400 mx-auto mb-3 opacity-60" />
+          <h2 className="text-xl font-bold font-space text-white">System Settings</h2>
+          <p className="text-xs text-slate-400 font-mono mt-1">
+            Placeholder — operational configuration remains environment-managed for this build.
+          </p>
+        </div>
+      )}
+
+      {activeTab === 'diagnostics' && (
+        <Diagnostics />
+      )}
+      </Suspense>
+    </Layout>
+  );
 }
 
 export default App;

@@ -6,6 +6,25 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: [
+          'Inter',
+          'ui-sans-serif',
+          'system-ui',
+          '-apple-system',
+          'BlinkMacSystemFont',
+          '"Segoe UI"',
+          'Roboto',
+          'sans-serif',
+        ],
+        mono: [
+          '"Cascadia Mono"',
+          '"Segoe UI Mono"',
+          'Consolas',
+          '"Roboto Mono"',
+          'monospace',
+        ],
+      },
       colors: {
         neuronex: {
           50: '#f0f9ff',

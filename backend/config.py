@@ -33,6 +33,7 @@ class Config:
     PKT_STATUS: int = 4
     PKT_DONE: int = 5
     PKT_TELEMETRY: int = 6  # ESP32 -> Laptop: RSSI/SNR
+    PKT_CMD: int = 7        # Ground -> Satellite: priority/schedule commands
 
     # Serial frame
     FRAME_START: int = 0xAA

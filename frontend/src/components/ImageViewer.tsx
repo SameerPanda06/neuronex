@@ -14,18 +14,19 @@ export function ImageViewer({ imageId, onClose }: ImageViewerProps) {
   const [zoom, setZoom] = useState(1);
   const [showMetadata, setShowMetadata] = useState(true);
 
-  if (!imageId) return null;
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') onClose();
-    if (e.key === 'ArrowLeft') setZoom(Math.max(0.5, zoom - 0.25));
-    if (e.key === 'ArrowRight') setZoom(Math.min(3, zoom + 0.25));
-  };
-
   React.useEffect(() => {
+    if (!imageId) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+      if (e.key === 'ArrowLeft') setZoom((prev) => Math.max(0.5, prev - 0.25));
+      if (e.key === 'ArrowRight') setZoom((prev) => Math.min(3, prev + 0.25));
+    };
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [zoom]);
+  }, [imageId, onClose]);
+
+  if (!imageId) return null;
 
   if (loading) {
     return (
@@ -49,11 +50,11 @@ export function ImageViewer({ imageId, onClose }: ImageViewerProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/95 flex flex-col" onKeyDown={handleKeyDown}>
+    <div className="fixed inset-0 z-50 bg-black/95 flex flex-col">
       {/* Header */}
       <header className="p-4 flex items-center justify-between border-b border-white/10">
         <div className="flex items-center gap-4">
-          <button onClick={onClose} className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors">
+          <button onClick={onClose} className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors" aria-label="Close image viewer" title="Close image viewer">
             <X className="w-6 h-6 text-white" />
           </button>
           <div>
@@ -92,16 +93,16 @@ export function ImageViewer({ imageId, onClose }: ImageViewerProps) {
 
           {/* Zoom Controls Overlay */}
           <div className="absolute bottom-4 right-4 flex items-center gap-2 bg-black/50 rounded-lg p-2 backdrop-blur">
-            <button onClick={() => setZoom(Math.max(0.5, zoom - 0.25))} className="p-1.5 bg-white/10 rounded hover:bg-white/20">
+            <button onClick={() => setZoom(Math.max(0.5, zoom - 0.25))} className="p-1.5 bg-white/10 rounded hover:bg-white/20" aria-label="Zoom out" title="Zoom out">
               <ChevronLeft className="w-4 h-4" />
             </button>
             <span className="px-3 py-1.5 bg-white/10 rounded text-sm font-mono text-white min-w-[4rem] text-center">
               {Math.round(zoom * 100)}%
             </span>
-            <button onClick={() => setZoom(Math.min(3, zoom + 0.25))} className="p-1.5 bg-white/10 rounded hover:bg-white/20">
+            <button onClick={() => setZoom(Math.min(3, zoom + 0.25))} className="p-1.5 bg-white/10 rounded hover:bg-white/20" aria-label="Zoom in" title="Zoom in">
               <ChevronRight className="w-4 h-4" />
             </button>
-            <button onClick={() => setZoom(1)} className="p-1.5 bg-white/10 rounded hover:bg-white/20 ml-1" title="Reset">
+            <button onClick={() => setZoom(1)} className="p-1.5 bg-white/10 rounded hover:bg-white/20 ml-1" aria-label="Reset zoom" title="Reset zoom">
               <RotateCcw className="w-4 h-4" />
             </button>
           </div>
@@ -120,6 +121,8 @@ export function ImageViewer({ imageId, onClose }: ImageViewerProps) {
               <button
                 onClick={() => setShowMetadata(false)}
                 className="p-1.5 bg-white/10 rounded-lg hover:bg-white/20 text-neuronex-400"
+                aria-label="Close image metadata"
+                title="Close image metadata"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -147,7 +150,7 @@ export function ImageViewer({ imageId, onClose }: ImageViewerProps) {
               <MetadataField label="Progress" value={`${(image.progress_percent || 0).toFixed(1)}%`} />
               <MetadataField label="Chunk Size" value={image.chunk_size ? `${image.chunk_size} B` : '—'} />
               <MetadataField label="RSSI" value={image.rssi !== null ? `${image.rssi} dBm` : '—'} />
-              MetadataField label="SNR" value={image.snr !== null ? `${image.snr.toFixed(1)} dB` : '—'} />
+              <MetadataField label="SNR" value={image.snr !== null ? `${image.snr.toFixed(1)} dB` : '—'} />
 
               <MetadataField label="Confidence" value={image.confidence ? `${(image.confidence * 100).toFixed(1)}%` : '—'} />
               <MetadataField label="ML Latency" value={image.latency_ms ? `${image.latency_ms.toFixed(0)} ms` : '—'} />
@@ -164,7 +167,7 @@ export function ImageViewer({ imageId, onClose }: ImageViewerProps) {
               <div className="mt-6 p-4 bg-white/5 rounded-lg border border-white/10">
                 <h4 className="font-medium text-white mb-3">Class Probabilities</h4>
                 <div className="grid grid-cols-3 gap-4">
-                  {Object.entries(image.all_probabilities).map(([cls, prob]) => (
+                  {(Object.entries(image.all_probabilities) as [string, number][]).map(([cls, prob]) => (
                     <div key={cls} className="text-center">
                       <p className="text-xs text-neuronex-400 mb-1">{cls}</p>
                       <div className="h-2 bg-white/10 rounded-full overflow-hidden">

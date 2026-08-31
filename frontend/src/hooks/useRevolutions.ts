@@ -1,37 +1,45 @@
 // Revolution Hooks
 import { useState, useEffect, useCallback } from 'react';
-import { revolutionsApi } from '../services/api';
-import { socketService } from '../services/socket';
-import type { Revolution, RevolutionsResponse, RevolutionStats, RevolutionStatusResponse, RevolutionStartEvent, RevolutionEndEvent } from '../types';
+import { dataSource } from '../data';
+import type {
+  Revolution,
+  RevolutionStats,
+  RevolutionStatusResponse,
+  RevolutionStartEvent,
+  RevolutionEndEvent,
+} from '../types';
 
 export function useRevolutions(params?: {
   mission_id?: string;
   status?: string;
   limit?: number;
 }) {
-  const [data, setData] = useState<RevolutionsResponse | null>(null);
+  const [data, setData] = useState<{ revolutions: Revolution[]; count: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const mission_id = params?.mission_id;
+  const status = params?.status;
+  const limit = params?.limit;
 
   const fetch = useCallback(async () => {
     try {
-      const res = await revolutionsApi.list(params);
-      setData(res.data);
+      const res = await dataSource.revolutions.list({ mission_id, status, limit });
+      setData(res);
       setError(null);
-    } catch (e) {
+    } catch {
       setError('Failed to fetch revolutions');
     } finally {
       setLoading(false);
     }
-  }, [params?.mission_id, params?.status, params?.limit]);
+  }, [mission_id, status, limit]);
 
   useEffect(() => {
     fetch();
   }, [fetch]);
 
-  // Real-time updates
+  // Real-time updates via DataSource
   useEffect(() => {
-    const unsubStart = socketService.on<RevolutionStartEvent>('revolution:start', (event) => {
+    const unsubStart = dataSource.revolutions.subscribeStart((event: RevolutionStartEvent) => {
       setData((prev) => {
         if (!prev) return prev;
         const newRev: Revolution = {
@@ -56,7 +64,7 @@ export function useRevolutions(params?: {
       });
     });
 
-    const unsubEnd = socketService.on<RevolutionEndEvent>('revolution:end', (event) => {
+    const unsubEnd = dataSource.revolutions.subscribeEnd((event: RevolutionEndEvent) => {
       setData((prev) => {
         if (!prev) return prev;
         return {
@@ -78,7 +86,10 @@ export function useRevolutions(params?: {
       });
     });
 
-    return () => { unsubStart(); unsubEnd(); };
+    return () => {
+      unsubStart();
+      unsubEnd();
+    };
   }, []);
 
   return { revolutions: data?.revolutions || [], total: data?.count || 0, loading, error, refetch: fetch };
@@ -92,10 +103,10 @@ export function useRevolution(num: number | null) {
   const fetch = useCallback(async () => {
     if (!num) return;
     try {
-      const res = await revolutionsApi.get(num);
-      setData(res.data);
+      const res = await dataSource.revolutions.get(num);
+      setData(res);
       setError(null);
-    } catch (e) {
+    } catch {
       setError('Failed to fetch revolution');
     } finally {
       setLoading(false);
@@ -115,9 +126,9 @@ export function useCurrentRevolution() {
 
   const fetch = useCallback(async () => {
     try {
-      const res = await revolutionsApi.current();
-      setData(res.data);
-    } catch (e) {
+      const res = await dataSource.revolutions.current();
+      setData(res);
+    } catch {
       setData({ current: null, message: 'Error' });
     } finally {
       setLoading(false);
@@ -139,9 +150,9 @@ export function useRevolutionStatus() {
 
   const fetch = useCallback(async () => {
     try {
-      const res = await revolutionsApi.status();
-      setStatus(res.data);
-    } catch (e) {
+      const res = await dataSource.revolutions.status();
+      setStatus(res);
+    } catch {
       setStatus({ active: false, revolution: null, time_remaining: null, next_revolution: null, time_until_next: null });
     } finally {
       setLoading(false);
@@ -154,9 +165,9 @@ export function useRevolutionStatus() {
     return () => clearInterval(interval);
   }, [fetch]);
 
-  // Real-time revolution events
+  // Real-time revolution events via DataSource
   useEffect(() => {
-    const unsubStart = socketService.on<RevolutionStartEvent>('revolution:start', (event) => {
+    const unsubStart = dataSource.revolutions.subscribeStart((event: RevolutionStartEvent) => {
       setStatus({
         active: true,
         revolution: {
@@ -183,11 +194,14 @@ export function useRevolutionStatus() {
       });
     });
 
-    const unsubEnd = socketService.on<RevolutionEndEvent>('revolution:end', () => {
-      setStatus((prev) => prev ? { ...prev, active: false, time_remaining: 0 } : null);
+    const unsubEnd = dataSource.revolutions.subscribeEnd(() => {
+      setStatus((prev) => (prev ? { ...prev, active: false, time_remaining: 0 } : null));
     });
 
-    return () => { unsubStart(); unsubEnd(); };
+    return () => {
+      unsubStart();
+      unsubEnd();
+    };
   }, []);
 
   return { status, loading };
@@ -200,10 +214,10 @@ export function useRevolutionStats() {
 
   const fetch = useCallback(async () => {
     try {
-      const res = await revolutionsApi.stats();
-      setData(res.data);
+      const res = await dataSource.revolutions.stats();
+      setData(res);
       setError(null);
-    } catch (e) {
+    } catch {
       setError('Failed to fetch revolution stats');
     } finally {
       setLoading(false);
