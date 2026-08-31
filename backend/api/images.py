@@ -1,39 +1,38 @@
-from flask import Blueprint, jsonify, request
-from sqlalchemy import desc, func
+"""
+Images API — Query and manage stored images.
+"""
+from dataclasses import asdict
+from flask import Blueprint, request, jsonify, send_file
+from services.storage import get_storage
 from models import db, Image, ImageStatus, Classification, Action
+from sqlalchemy import desc
+import logging
 
+logger = logging.getLogger(__name__)
 images_bp = Blueprint("images", __name__)
 
 
-@images_bp.route("/images", methods=["GET"])
+@images_bp.route("", methods=["GET"])
+@images_bp.route("/", methods=["GET"])
 def list_images():
-    """List all images with optional filtering."""
-    # Query params
-    status = request.args.get("status")  # pending, classified, queued, transmitting, complete, discarded, failed
-    classification = request.args.get("classification")  # CLEAR, CLOUDY, NOT_VISIBLE
+    """List images with optional filters."""
     mission_id = request.args.get("mission_id")
-    limit = int(request.args.get("limit", 100))
+    classification = request.args.get("classification")
+    status = request.args.get("status")
+    limit = int(request.args.get("limit", 50))
     offset = int(request.args.get("offset", 0))
-    sort = request.args.get("sort", "priority")  # priority, created_at, progress
-    order = request.args.get("order", "asc")
 
     query = Image.query
 
-    if status:
-        query = query.filter(Image.status == status)
-    if classification:
-        query = query.filter(Image.classification == classification)
     if mission_id:
         query = query.filter(Image.mission_id == mission_id)
-
-    # Sorting
-    sort_column = getattr(Image, sort, Image.priority)
-    if order == "desc":
-        sort_column = desc(sort_column)
-    query = query.order_by(sort_column)
+    if classification:
+        query = query.filter(Image.classification == classification)
+    if status:
+        query = query.filter(Image.status == status)
 
     total = query.count()
-    images = query.limit(limit).offset(offset).all()
+    images = query.order_by(desc(Image.created_at)).offset(offset).limit(limit).all()
 
     return jsonify({
         "images": [img.to_dict() for img in images],
@@ -43,17 +42,48 @@ def list_images():
     })
 
 
-@images_bp.route("/images/<string:image_id>", methods=["GET"])
+@images_bp.route("/stats", methods=["GET"])
+def images_stats():
+    """Get aggregate statistics for images."""
+    total = Image.query.count()
+    by_status = {s.value: Image.query.filter(Image.status == s.value).count() for s in ImageStatus}
+    by_classification = {c.value: Image.query.filter(Image.classification == c.value).count() for c in Classification}
+    by_action = {a.value: Image.query.filter(Image.action == a.value).count() for a in Action}
+
+    transmitting = by_status.get(ImageStatus.TRANSMITTING.value, 0)
+    complete = by_status.get(ImageStatus.COMPLETE.value, 0)
+    pending = by_status.get(ImageStatus.PENDING.value, 0) + by_status.get(ImageStatus.QUEUED.value, 0)
+    completion_rate = round((complete / total * 100), 1) if total > 0 else 0.0
+    avg_progress = db.session.query(db.func.avg(Image.progress_percent)).scalar() or 0.0
+
+    return jsonify({
+        "total": total,
+        "by_status": by_status,
+        "by_classification": by_classification,
+        "by_action": by_action,
+        "transmitting": transmitting,
+        "complete": complete,
+        "pending": pending,
+        "completion_rate": completion_rate,
+        "avg_progress": round(float(avg_progress), 1)
+    })
+
+
+@images_bp.route("/<image_id>", methods=["GET"])
 def get_image(image_id):
-    """Get single image details."""
-    image = Image.query.get_or_404(image_id)
+    """Get image details."""
+    image = db.session.get(Image, image_id)
+    if not image:
+        return jsonify({"error": "Not found"}), 404
     return jsonify(image.to_dict())
 
 
-@images_bp.route("/images/<string:image_id>/progress", methods=["GET"])
+@images_bp.route("/<image_id>/progress", methods=["GET"])
 def get_image_progress(image_id):
     """Get real-time transmission progress for an image."""
-    image = Image.query.get_or_404(image_id)
+    image = db.session.get(Image, image_id)
+    if not image:
+        return jsonify({"error": "Not found"}), 404
     return jsonify({
         "image_id": image.id,
         "status": image.status,
@@ -64,30 +94,48 @@ def get_image_progress(image_id):
         "rssi": image.rssi,
         "snr": image.snr,
         "throughput_bps": image.throughput_bps,
-        "latency_ms_tx": image.latency_ms_tx,
+        "latency_ms_tx": image.latency_ms_tx
     })
 
 
-@images_bp.route("/images/stats", methods=["GET"])
-def get_images_stats():
-    """Get aggregate statistics."""
-    total = Image.query.count()
-    by_status = db.session.query(Image.status, func.count(Image.id)).group_by(Image.status).all()
-    by_classification = db.session.query(Image.classification, func.count(Image.id)).group_by(Image.classification).all()
-    by_action = db.session.query(Image.action, func.count(Image.id)).group_by(Image.action).all()
+@images_bp.route("/<image_id>/download", methods=["GET"])
+def download_image(image_id):
+    """Download reassembled JPEG from local storage."""
+    storage = get_storage()
+    meta = storage.get_image(image_id)
+    if not meta or not meta.local_path:
+        return jsonify({"error": "Image not found or not complete"}), 404
+    return send_file(meta.local_path, mimetype="image/jpeg", as_attachment=True,
+                     download_name=f"{image_id}.jpg")
 
-    # Transmission stats
-    transmitting = Image.query.filter(Image.status == ImageStatus.TRANSMITTING.value).count()
-    complete = Image.query.filter(Image.status == ImageStatus.COMPLETE.value).count()
-    pending = Image.query.filter(Image.status.in_([ImageStatus.PENDING.value, ImageStatus.CLASSIFIED.value, ImageStatus.QUEUED.value])).count()
+
+@images_bp.route("/storage/stats", methods=["GET"])
+def storage_stats():
+    """Get storage usage statistics."""
+    storage = get_storage()
+    return jsonify(storage.get_storage_stats())
+
+
+@images_bp.route("/storage/list", methods=["GET"])
+def storage_list():
+    """List images from local storage (includes completed JPEGs)."""
+    mission_id = request.args.get("mission_id")
+    classification = request.args.get("classification")
+    limit = int(request.args.get("limit", 100))
+
+    storage = get_storage()
+    images = storage.list_images(mission_id=mission_id, classification=classification, limit=limit)
 
     return jsonify({
-        "total": total,
-        "by_status": {k: v for k, v in by_status},
-        "by_classification": {k: v for k, v in by_classification},
-        "by_action": {k: v for k, v in by_action},
-        "transmitting": transmitting,
-        "complete": complete,
-        "pending": pending,
-        "completion_rate": round(complete / total * 100, 1) if total > 0 else 0,
+        "images": [asdict(img) for img in images],
+        "count": len(images)
     })
+
+
+@images_bp.route("/storage/cleanup", methods=["POST"])
+def storage_cleanup():
+    """Remove oldest completed images to free space."""
+    keep = int(request.args.get("keep", 100))
+    storage = get_storage()
+    removed = storage.cleanup_old_images(keep_recent=keep)
+    return jsonify({"removed": removed, "kept_recent": keep})

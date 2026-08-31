@@ -30,7 +30,7 @@ def get_retransmissions():
 @retransmit_bp.route("/retransmissions/<int:retransmit_id>", methods=["GET"])
 def get_retransmission(retransmit_id):
     """Get single retransmission request."""
-    retrans = Retransmission.query.get_or_404(retransmit_id)
+    retrans = db.get_or_404(Retransmission, retransmit_id)
     return jsonify(retrans.to_dict())
 
 
@@ -49,7 +49,7 @@ def acknowledge_retransmission():
         return jsonify({"error": "Either retransmit_id or image_id required"}), 400
 
     if retransmit_id:
-        retrans = Retransmission.query.get(retransmit_id)
+        retrans = db.session.get(Retransmission, retransmit_id)
     else:
         # Get latest pending for this image
         retrans = Retransmission.query.filter(
@@ -78,13 +78,14 @@ def acknowledge_retransmission():
 @retransmit_bp.route("/retransmissions/<int:retransmit_id>/complete", methods=["POST"])
 def complete_retransmission(retransmit_id):
     """Mark retransmission as completed."""
-    retrans = Retransmission.query.get_or_404(retransmit_id)
+    retrans = db.get_or_404(Retransmission, retransmit_id)
     retrans.status = "completed"
     retrans.completed_at = datetime.utcnow()
     db.session.commit()
 
+
     # Check if image is now complete
-    image = Image.query.get(retrans.image_id)
+    image = db.session.get(Image, retrans.image_id)
     if image and image.segments_confirmed >= image.total_segments:
         image.status = ImageStatus.COMPLETE.value
         image.progress_percent = 100.0

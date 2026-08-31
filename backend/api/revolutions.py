@@ -38,6 +38,38 @@ def get_current_revolution():
     return jsonify({"current": active.to_dict()})
 
 
+@revolutions_bp.route("/revolutions/status", methods=["GET"])
+def get_revolution_status():
+    """Get current revolution status for dashboard."""
+    active = Revolution.query.filter(Revolution.status == "active").first()
+    next_rev = Revolution.query.filter(Revolution.status == "scheduled").order_by(Revolution.window_start.asc()).first()
+    total = Revolution.query.count()
+    now = datetime.utcnow()
+
+    time_remaining = None
+    if active and active.window_end:
+        time_remaining = max(0, int((active.window_end - now).total_seconds()))
+
+    time_until_next = None
+    if next_rev and next_rev.window_start:
+        time_until_next = max(0, int((next_rev.window_start - now).total_seconds()))
+
+    return jsonify({
+        "active": active is not None,
+        "revolution": active.to_dict() if active else None,
+        "time_remaining": time_remaining,
+        "next_revolution": next_rev.to_dict() if next_rev else None,
+        "time_until_next": time_until_next,
+        "current_revolution": active.revolution_num if active else 0,
+        "total_revolutions": total,
+        "active_mission": active.mission_id if active else None,
+        "window_start": active.window_start.isoformat() if active and active.window_start else None,
+        "window_end": active.window_end.isoformat() if active and active.window_end else None,
+        "images_planned": active.images_planned if active else [],
+        "images_completed": active.images_completed if active else [],
+    })
+
+
 @revolutions_bp.route("/revolutions/<int:revolution_num>", methods=["GET"])
 def get_revolution(revolution_num):
     """Get single revolution details."""
@@ -90,9 +122,10 @@ def schedule_revolution():
     # Calculate total segments
     total_segments = 0
     for img_plan in images_planned:
-        img = Image.query.get(img_plan["id"])
+        img = db.session.get(Image, img_plan["id"])
         if img and img.total_segments:
             total_segments += img.total_segments
+
 
     revolution = Revolution(
         revolution_num=revolution_num,
