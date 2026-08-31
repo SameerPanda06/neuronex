@@ -75,3 +75,5 @@ yarn-error.log*
 .vercel
 .netlify
 backend/.venv/
+
+backend/.venv/
