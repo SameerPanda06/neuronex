@@ -38,6 +38,23 @@ def get_current_revolution():
     return jsonify({"current": active.to_dict()})
 
 
+@revolutions_bp.route("/revolutions/status", methods=["GET"])
+def get_revolution_status():
+    """Get current revolution status for dashboard."""
+    active = Revolution.query.filter(Revolution.status == "active").first()
+    total = Revolution.query.count()
+
+    return jsonify({
+        "current_revolution": active.revolution_num if active else 0,
+        "total_revolutions": total,
+        "active_mission": active.mission_id if active else None,
+        "window_start": active.window_start.isoformat() if active and active.window_start else None,
+        "window_end": active.window_end.isoformat() if active and active.window_end else None,
+        "images_planned": active.images_planned if active else [],
+        "images_completed": active.images_completed if active else [],
+    })
+
+
 @revolutions_bp.route("/revolutions/<int:revolution_num>", methods=["GET"])
 def get_revolution(revolution_num):
     """Get single revolution details."""

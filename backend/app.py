@@ -31,7 +31,7 @@ def create_app():
     # Initialize extensions
     db.init_app(app)
     CORS(app, origins="*")
-    socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
+    socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 
     # Create tables
     with app.app_context():
@@ -44,12 +44,16 @@ def create_app():
     from api.queue import queue_bp
     from api.retransmit import retransmit_bp
     from api.revolutions import revolutions_bp
+    from api.command import bp as command_bp
+    from api.schedule import bp as schedule_bp
 
     app.register_blueprint(images_bp, url_prefix="/api")
     app.register_blueprint(telemetry_bp, url_prefix="/api")
     app.register_blueprint(queue_bp, url_prefix="/api")
     app.register_blueprint(retransmit_bp, url_prefix="/api")
     app.register_blueprint(revolutions_bp, url_prefix="/api")
+    app.register_blueprint(command_bp)  # already has /api/command prefix
+    app.register_blueprint(schedule_bp)  # already has /api/schedule prefix
 
     # Health check
     @app.route("/api/health")
@@ -60,6 +64,35 @@ def create_app():
             "version": "1.0.0"
         })
 
+    # Images stats endpoint (needed for dashboard)
+    @app.route("/api/images/stats")
+    def images_stats():
+        from models import Image, ImageStatus, Classification
+        total = Image.query.count()
+        by_status = {}
+        for s in ImageStatus:
+            by_status[s.value] = Image.query.filter(Image.status == s.value).count()
+        by_classification = {}
+        for c in Classification:
+            by_classification[c.value] = Image.query.filter(Image.classification == c.value).count()
+        avg_progress = db.session.query(db.func.avg(Image.progress_percent)).scalar() or 0
+        return jsonify({
+            "total": total,
+            "by_status": by_status,
+            "by_classification": by_classification,
+            "avg_progress": round(float(avg_progress), 1)
+        })
+
+    # Queue next endpoint (needed for dashboard)
+    @app.route("/api/queue/next")
+    def queue_next():
+        from models import Image, ImageStatus
+        next_img = Image.query.filter(
+            Image.status.in_([ImageStatus.QUEUED.value, ImageStatus.CLASSIFIED.value])
+        ).order_by(Image.priority.asc()).first()
+        return jsonify({"image": next_img.to_dict() if next_img else None})
+
+    
     # SocketIO events
     @socketio.on("connect")
     def handle_connect():
@@ -101,7 +134,7 @@ def create_app():
                     # Get latest telemetry
                     latest = Telemetry.query.order_by(Telemetry.timestamp.desc()).first()
                     if latest:
-                        image = Image.query.get(latest.image_id)
+                        image = db.session.get(Image,latest.image_id)
                         socketio.emit("telemetry:update", {
                             "image_id": latest.image_id,
                             "mission_id": latest.mission_id,
@@ -120,6 +153,32 @@ def create_app():
 
     # Start background task
     socketio.start_background_task(emit_telemetry_loop)
+
+    # Start scheduler thread (emits schedule state every second)
+    from services.scheduler import start_scheduler_thread
+    start_scheduler_thread(socketio)
+
+    # Start command sender thread (sends queued PKT_CMD to ESP32 via serial)
+    def send_commands_loop():
+        import time
+        from services.receiver import get_receiver
+        from api.command import pop_next_command, has_pending_commands
+
+        while True:
+            try:
+                if has_pending_commands():
+                    cmd_packet = pop_next_command()
+                    if cmd_packet:
+                        receiver = get_receiver()
+                        if receiver and receiver.serial_conn and receiver.serial_conn.is_open:
+                            # Send raw command packet (will be framed by ESP32 for LoRa TX)
+                            receiver.serial_conn.write(cmd_packet)
+                            logger.info(f"Sent CMD to ESP32: {cmd_packet.hex()}")
+            except Exception as e:
+                logger.error(f"Command send error: {e}")
+            time.sleep(0.5)
+
+    socketio.start_background_task(send_commands_loop)
 
     return app, socketio
 
