@@ -10,12 +10,17 @@ from datetime import datetime
 from typing import Optional, Callable
 
 from flask import current_app
+from config import config
 from services.protocol import (
     parse_serial_frame, parse_packet, parse_meta_payload,
     parse_status_payload, parse_telemetry_payload,
-    PKT_DATA, PKT_META, PKT_STATUS, PKT_TELEMETRY, PKT_ACK, PKT_NACK, PKT_DONE
+    parse_cmd_payload,
+    CMD_STATUS_REQ,
+    PKT_DATA, PKT_META, PKT_STATUS, PKT_TELEMETRY, PKT_ACK, PKT_NACK, PKT_DONE, PKT_CMD
 )
 from models import db, Image, Telemetry, Retransmission, Revolution, ImageStatus
+from sqlalchemy.orm import Session
+from services.storage import get_storage
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +111,7 @@ class SerialReceiver:
                 time.sleep(0.1)
 
     def _process_buffer(self):
-        """Process buffer for complete frames."""
+        """Process buffer for complete frames with robust sync recovery."""
         while len(self.buffer) >= 4:  # Minimum frame: START + LEN_HI + LEN_LO + CRC
             # Find start byte
             start_idx = self.buffer.find(0xAA)
@@ -125,6 +130,12 @@ class SerialReceiver:
             length = (self.buffer[1] << 8) | self.buffer[2]
             frame_size = 3 + length + 2  # START + LEN(2) + PAYLOAD + CRC(2)
 
+            # Validate length - reject obviously corrupt frames
+            if length > 255 or length < 1:
+                logger.warning(f"Suspicious length={length}, dropping frame, buffer_head={self.buffer[:20].hex()}")
+                self.buffer = self.buffer[1:]  # Skip start byte, try next
+                continue
+
             if len(self.buffer) < frame_size:
                 return  # Wait for more data
 
@@ -132,20 +143,27 @@ class SerialReceiver:
             frame = bytes(self.buffer[:frame_size])
             self.buffer = self.buffer[frame_size:]
 
-            # Parse frame
+            # Debug: log raw frame
+            logger.debug(f"Raw frame: {frame.hex()}")
+
+            # Parse frame with CRC16 validation
             payload = parse_serial_frame(frame)
             if payload is None:
-                logger.warning("Invalid serial frame (CRC error or malformed)")
+                logger.warning(f"Invalid serial frame (CRC error or malformed), frame={frame.hex()}")
+                # Try to recover by scanning for next valid start byte within this frame
+                # This handles case where ASCII logs corrupted the frame boundary
                 continue
+
+            logger.debug(f"Parsed payload ({len(payload)} bytes): {payload.hex()}")
 
             # Parse LoRa packet
             packet = parse_packet(payload)
             if packet is None:
-                logger.warning("Invalid LoRa packet")
+                logger.warning(f"Invalid LoRa packet, payload={payload.hex()}")
                 continue
 
             if not packet.crc_valid:
-                logger.warning(f"CRC mismatch: mission={packet.mission_id}, image={packet.image_id}, type={packet.pkt_type}")
+                logger.warning(f"LoRa CRC mismatch: mission={packet.mission_id}, image={packet.image_id}, type={packet.pkt_type}")
                 continue
 
             # Process packet
@@ -195,7 +213,9 @@ class SerialReceiver:
         elif pkt_type == PKT_DONE:
             self._handle_done(image_id, mission_id, packet.payload)
         elif pkt_type == PKT_DATA:
-            self._handle_data(image_id, mission_id, packet.chunk_num, packet.total_chunks)
+            self._handle_data(image_id, mission_id, packet.chunk_num, packet.total_chunks, packet.payload)
+        elif pkt_type == PKT_CMD:
+            self._handle_cmd(image_id, mission_id, packet.payload)
 
         db.session.commit()
 
@@ -213,7 +233,7 @@ class SerialReceiver:
         """Handle PKT_META: image metadata from Pi TX."""
         meta = parse_meta_payload(payload)
 
-        image = Image.query.get(image_id)
+        image = db.session.get(Image, image_id)
         if not image:
             # Create new image record
             image = Image(
@@ -234,6 +254,14 @@ class SerialReceiver:
         image.segments_confirmed = 0
         image.progress_percent = 0.0
 
+        # Also store in local storage
+        storage = get_storage()
+        storage.add_segment(image_id, mission_id, 0,  # META is segment 0
+                          meta.get("total_segments", 0),
+                          meta.get("chunk_size", 200),
+                          b'',  # no payload for META
+                          meta=meta)
+
         logger.info(f"META: {image_id} {meta.get('classification')} segs={meta.get('total_segments')}")
 
     def _handle_status(self, image_id: str, mission_id: str, payload: bytes):
@@ -241,7 +269,7 @@ class SerialReceiver:
         status = parse_status_payload(payload)
         missing = status.get("missing_segments", [])
 
-        image = Image.query.get(image_id)
+        image = db.session.get(Image, image_id)
         if image:
             image.segments_confirmed = status.get("received_count", 0)
             image.total_segments = status.get("total_segments", image.total_segments)
@@ -276,7 +304,7 @@ class SerialReceiver:
             latest_telem.snr = snr
 
         # Update image with latest signal quality
-        image = Image.query.get(image_id)
+        image = db.session.get(Image, image_id)
         if image:
             image.rssi = rssi
             image.snr = snr
@@ -285,7 +313,7 @@ class SerialReceiver:
 
     def _handle_ack(self, image_id: str, mission_id: str):
         """Handle PKT_ACK: All segments received."""
-        image = Image.query.get(image_id)
+        image = db.session.get(Image, image_id)
         if image:
             image.status = "complete"
             image.segments_confirmed = image.total_segments or 0
@@ -301,7 +329,7 @@ class SerialReceiver:
         count = (payload[12] << 8) | payload[13]
         missing = list(payload[14:14 + count])
 
-        image = Image.query.get(image_id)
+        image = db.session.get(Image, image_id)
         if image:
             # Create retransmission request
             retrans = Retransmission(
@@ -315,18 +343,55 @@ class SerialReceiver:
 
     def _handle_done(self, image_id: str, mission_id: str, payload: bytes):
         """Handle PKT_DONE: TX confirms moving on."""
-        image = Image.query.get(image_id)
+        image = db.session.get(Image, image_id)
         if image and image.status != "complete":
             image.status = "complete"
             image.progress_percent = 100.0
             image.completed_at = datetime.utcnow()
             logger.info(f"DONE: {image_id} marked complete by TX")
 
-    def _handle_data(self, image_id: str, mission_id: str, chunk_num: int, total_chunks: int):
+    def _handle_data(self, image_id: str, mission_id: str, chunk_num: int, total_chunks: int, payload: bytes = None):
         """Handle PKT_DATA: Image segment received (forwarded from ESP32)."""
-        # This is just confirmation that segment was received by ESP32
-        # Actual JPEG reassembly happens on laptop from serial frames
-        pass
+        # Payload comes from the parsed packet
+        if payload is None:
+            return
+
+        # Store in local storage for reassembly
+        storage = get_storage()
+        # Get image meta to fill in classification etc.
+        image = db.session.get(Image, image_id)
+        meta = {
+            "classification": image.classification if image else "UNKNOWN",
+            "priority": image.priority if image else 99,
+            "jpeg_quality": image.jpeg_quality if image else 85,
+            "file_size": 0
+        }
+        storage.add_segment(image_id, mission_id, chunk_num, total_chunks,
+                          image.chunk_size if image else 200, payload,
+                          meta=meta, rssi=image.rssi or 0, snr=image.snr or 0)
+
+        # Update DB progress
+        if image:
+            image.segments_confirmed = chunk_num + 1
+            if total_chunks:
+                image.progress_percent = round((chunk_num + 1) / total_chunks * 100, 1)
+            image.status = "transmitting"
+
+    def _handle_cmd(self, image_id: str, mission_id: str, payload: bytes):
+        """Handle PKT_CMD: Ground command echoed back from satellite."""
+        cmd_data = parse_cmd_payload(payload)
+        cmd = cmd_data.get("cmd")
+        value = cmd_data.get("value", 0)
+
+        logger.info(f"CMD echo from satellite: cmd={cmd} value={value}")
+
+        if cmd == CMD_STATUS_REQ:
+            # Satellite is responding to our status request
+            self.socketio.emit("status:response", {
+                "image_id": image_id,
+                "mission_id": mission_id,
+                "value": value
+            })
 
     def _pkt_type_name(self, pkt_type: int) -> str:
         names = {
@@ -389,3 +454,35 @@ def init_receiver(port: str, baudrate: int, socketio, app) -> SerialReceiver:
     global _receiver_instance
     _receiver_instance = SerialReceiver(port, baudrate, socketio, app)
     return _receiver_instance
+
+
+# ============================================================
+# STANDALONE ENTRY POINT
+# ============================================================
+if __name__ == "__main__":
+    import os
+    from flask import Flask
+    from models import db
+
+    # Minimal Flask app for database context
+    app = Flask(__name__)
+    app.config["SQLALCHEMY_DATABASE_URI"] = config.DATABASE_URL
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    db.init_app(app)
+
+    with app.app_context():
+        db.create_all()
+
+    port = os.getenv("SERIAL_PORT", "COM3")
+    baudrate = int(os.getenv("SERIAL_BAUDRATE", "115200"))
+
+    print(f"[RECEIVER] Starting serial reader on {port} @ {baudrate}...")
+    receiver = SerialReceiver(port, baudrate, socketio=None, app=app)
+    receiver.start()
+
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("\n[RECEIVER] Shutting down...")
+        receiver.stop()

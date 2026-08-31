@@ -1,0 +1,101 @@
+{
+  "missions": [
+    {
+      "id": "NEX-000001",
+      "name": "Antarctic Survey Mission 1",
+      "description": "Polar ice shelf monitoring with 12 revolutions/day downlink",
+      "images": [
+        {
+          "id": "IMG-000001",
+          "file": "missions/NEX-000001_IMG-000001.jpg",
+          "chunk_size": 200,
+          "metadata": {
+            "capture_time": "2026-08-20T06:00:00Z",
+            "latitude": -78.5,
+            "longitude": -45.2,
+            "altitude_km": 520,
+            "classification": "UNCLASSIFIED",
+            "sensor": "EO-Vis",
+            "resolution_m": 1.5,
+            "target": "Ice Shelf Monitoring"
+          }
+        },
+        {
+          "id": "IMG-000002",
+          "file": "missions/NEX-000001_IMG-000002.jpg",
+          "chunk_size": 200,
+          "metadata": {
+            "capture_time": "2026-08-20T06:03:00Z",
+            "latitude": -78.3,
+            "longitude": -44.8,
+            "altitude_km": 520,
+            "classification": "UNCLASSIFIED",
+            "sensor": "EO-IR",
+            "resolution_m": 2.0,
+            "target": "Thermal Anomaly Detection"
+          }
+        },
+        {
+          "id": "IMG-000003",
+          "file": "missions/NEX-000001_IMG-000003.jpg",
+          "chunk_size": 200,
+          "metadata": {
+            "capture_time": "2026-08-20T06:06:00Z",
+            "latitude": -78.1,
+            "longitude": -44.5,
+            "altitude_km": 520,
+            "classification": "UNCLASSIFIED",
+            "sensor": "SAR",
+            "resolution_m": 1.0,
+            "target": "Surface Deformation"
+          }
+        },
+        {
+          "id": "IMG-000004",
+          "file": "missions/NEX-000001_IMG-000004.jpg",
+          "chunk_size": 200,
+          "metadata": {
+            "capture_time": "2026-08-20T06:09:00Z",
+            "latitude": -77.9,
+            "longitude": -44.1,
+            "altitude_km": 520,
+            "classification": "RESTRICTED",
+            "sensor": "EO-Vis",
+            "resolution_m": 1.5,
+            "target": "Coastal Mapping"
+          }
+        },
+        {
+          "id": "IMG-000005",
+          "file": "missions/NEX-000001_IMG-000005.jpg",
+          "chunk_size": 200,
+          "metadata": {
+            "capture_time": "2026-08-20T06:12:00Z",
+            "latitude": -77.7,
+            "longitude": -43.8,
+            "altitude_km": 520,
+            "classification": "CONFIDENTIAL",
+            "sensor": "EO-Multispectral",
+            "resolution_m": 2.5,
+            "target": "Vegetation Index"
+          }
+        },
+        {
+          "id": "IMG-000006",
+          "file": "missions/NEX-000001_IMG-000006.jpg",
+          "chunk_size": 200,
+          "metadata": {
+            "capture_time": "2026-08-20T06:15:00Z",
+            "latitude": -77.5,
+            "longitude": -43.4,
+            "altitude_km": 520,
+            "classification": "UNCLASSIFIED",
+            "sensor": "SAR",
+            "resolution_m": 1.0,
+            "target": "Vessel Detection"
+          }
+        }
+      ]
+    }
+  ]
+}

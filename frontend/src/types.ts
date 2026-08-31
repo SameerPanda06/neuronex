@@ -1,5 +1,4 @@
-// TypeScript types matching backend API contract
-// Keep in sync with backend/openapi.yaml and CONTRACT.md
+// Types matching backend CONTRACT.md
 
 export type Classification = "CLEAR" | "CLOUDY" | "NOT_VISIBLE" | "UNKNOWN";
 export type Action = "keep" | "defer" | "discard";
@@ -36,6 +35,20 @@ export interface Image {
   completed_at: string | null;
 }
 
+export interface ImagesResponse {
+  images: Image[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface ImagesStats {
+  total: number;
+  by_status: Record<ImageStatus, number>;
+  by_classification: Record<Classification, number>;
+  avg_progress: number;
+}
+
 export interface Telemetry {
   id: number;
   image_id: string;
@@ -46,69 +59,8 @@ export interface Telemetry {
   rssi: number | null;
   snr: number | null;
   latency_ms: number | null;
-  timestamp: string;
   raw_payload: string | null;
-}
-
-export interface Retransmission {
-  id: number;
-  image_id: string;
-  mission_id: string;
-  missing_segments: number[];
-  requested_at: string;
-  acknowledged_at: string | null;
-  completed_at: string | null;
-  status: RetransmissionStatus;
-}
-
-export interface Revolution {
-  id: number;
-  revolution_num: number;
-  mission_id: string;
-  window_start: string;
-  window_end: string;
-  window_duration_sec: number;
-  images_planned: { id: string; priority: number }[] | null;
-  images_completed: string[] | null;
-  images_failed: string[] | null;
-  status: RevolutionStatus;
-  total_segments_planned: number;
-  total_segments_transmitted: number;
-  total_segments_confirmed: number;
-  created_at: string;
-  started_at: string | null;
-  completed_at: string | null;
-}
-
-export interface ImagesResponse {
-  images: Image[];
-  total: number;
-  limit: number;
-  offset: number;
-}
-
-export interface ImageProgress {
-  image_id: string;
-  status: ImageStatus;
-  total_segments: number | null;
-  segments_confirmed: number;
-  current_segment: number;
-  progress_percent: number;
-  rssi: number | null;
-  snr: number | null;
-  throughput_bps: number | null;
-  latency_ms_tx: number | null;
-}
-
-export interface ImagesStats {
-  total: number;
-  by_status: Record<ImageStatus, number>;
-  by_classification: Record<Classification, number>;
-  by_action: Record<Action, number>;
-  transmitting: number;
-  complete: number;
-  pending: number;
-  completion_rate: number;
+  timestamp: string;
 }
 
 export interface TelemetryResponse {
@@ -116,101 +68,99 @@ export interface TelemetryResponse {
   latest_per_image: Telemetry[];
 }
 
-export interface TelemetryHistory {
-  telemetry: Telemetry[];
-  by_type: Record<PacketType, Telemetry[]>;
-  count: number;
-  since: string;
-}
-
 export interface SignalQuality {
-  telemetry: Telemetry[];
-  stats: {
-    rssi?: { min: number; max: number; avg: number; current: number };
-    snr?: { min: number; max: number; avg: number; current: number };
-  };
-  count: number;
+  rssi: number;
+  snr: number;
+  quality: "excellent" | "good" | "fair" | "poor" | "critical";
+  color: string;
 }
 
 export interface QueueResponse {
   queue: Image[];
-  count: number;
 }
 
-export interface ReorderRequest {
-  id: string;
-  priority: number;
-}
-
-export interface NextImageResponse {
-  next: Image | null;
-  message?: string;
+export interface Retransmission {
+  id: number;
+  image_id: string;
+  mission_id: string;
+  missing_segments: number[];
+  status: RetransmissionStatus;
+  requested_at: string;
+  completed_at: string | null;
 }
 
 export interface RetransmissionsResponse {
   retransmissions: Retransmission[];
-  count: number;
 }
 
-export interface RetransmissionAckRequest {
-  retransmit_id?: number;
-  image_id?: string;
-  segments?: number[];
-}
-
-export interface RetransmissionAckResponse {
-  retransmission: Retransmission;
-  message: string;
-}
-
-export interface RetransmissionStats {
-  total: number;
-  pending: number;
-  acknowledged: number;
-  completed: number;
-  by_image: Record<string, number>;
-}
-
-export interface RevolutionsResponse {
-  revolutions: Revolution[];
-  count: number;
+export interface Revolution {
+  id: number;
+  number: number;
+  status: RevolutionStatus;
+  started_at: string | null;
+  completed_at: string | null;
+  images_transmitted: number;
+  images_total: number;
 }
 
 export interface RevolutionStats {
   total_revolutions: number;
   completed: number;
   active: number;
-  scheduled: number;
-  total_segments_planned: number;
-  total_segments_confirmed: number;
-  overall_success_rate: number;
-}
-
-export interface ScheduleRevolutionRequest {
-  mission_id: string;
-  revolution_num: number;
-  window_start: string; // ISO format
-  images_planned: { id: string; priority: number }[];
+  avg_duration_seconds: number;
 }
 
 export interface RevolutionStatusResponse {
-  active: boolean;
-  revolution: Revolution | null;
-  time_remaining: number | null;
-  next_revolution: Revolution | null;
-  time_until_next: number | null;
+  current_revolution: number;
+  total_revolutions: number;
+  status: RevolutionStatus;
+  started_at: string | null;
 }
 
-// WebSocket Events (Server -> Client)
+export interface ScheduleState {
+  revs_per_day: number;
+  interval_hours: number;
+  window_minutes: number;
+  current_revolution: number;
+  total_revs_today: number;
+  window_active: boolean;
+  is_in_window: boolean;
+  downlink_countdown: string;
+  next_rev_countdown: string;
+  window_start_utc: string | null;
+  window_end_utc: string | null;
+  next_rev_utc: string | null;
+  progress_percent: number;
+  phase: "downlink" | "orbit";
+}
+
+export interface CommandResponse {
+  status: string;
+  priority?: number;
+  cmd?: string;
+  queued?: number;
+}
+
+export interface StorageStats {
+  total_images: number;
+  completed_images: number;
+  in_progress: number;
+  total_size_bytes: number;
+  total_size_mb: number;
+  max_size_gb: number;
+  max_images: number;
+}
+
+// WebSocket event types
 export interface TelemetryUpdateEvent {
   image_id: string;
   mission_id: string;
-  packet_type: PacketType;
-  segment_num: number | null;
-  total_segments: number | null;
-  rssi: number | null;
-  snr: number | null;
-  latency_ms: number | null;
+  packet_type: string;
+  segment_num: number;
+  total_segments: number;
+  rssi: number;
+  snr: number;
+  latency_ms: number;
   timestamp: string;
   progress: number;
 }
@@ -229,6 +179,7 @@ export interface ImageProgressEvent {
   segments_confirmed: number;
   segments_total: number;
   status: ImageStatus;
+  progress_percent: number;
 }
 
 export interface RetransmitRequestedEvent {
@@ -238,38 +189,14 @@ export interface RetransmitRequestedEvent {
 }
 
 export interface RevolutionStartEvent {
-  revolution_num: number;
-  mission_id: string;
-  window_sec: number;
-  images_in_window: { id: string; priority: number }[];
-  started_at: string;
+  revolution: number;
+  timestamp: string;
 }
 
 export interface RevolutionEndEvent {
-  revolution_num: number;
-  mission_id: string;
-  completed: string[];
-  failed: string[];
-  total_segments_transmitted: number;
-  total_segments_confirmed: number;
-  ended_at: string;
+  revolution: number;
+  images_transmitted: number;
+  timestamp: string;
 }
 
-// WebSocket Events (Client -> Server)
-export interface RetransmitAckEvent {
-  image_id: string;
-  segments: number[];
-}
-
-export interface QueueReorderEvent {
-  id: string;
-  priority: number;
-}
-
-export interface ImageDiscardEvent {
-  id: string;
-}
-
-// API Base URL
-export const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
-export const WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:5000";
+export interface ScheduleUpdateEvent extends ScheduleState {}

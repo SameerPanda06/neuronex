@@ -1,8 +1,8 @@
-// Images Hooks
+// Images Hooks - TypeScript
 import { useState, useEffect, useCallback } from 'react';
 import { imagesApi } from '../services/api';
 import { socketService } from '../services/socket';
-import type { Image, ImagesResponse, ImagesStats, ImageProgress, ImageClassifiedEvent, ImageProgressEvent, ImageStatus } from '../types';
+import type { Image, ImagesResponse, ImagesStats } from '../types';
 
 export function useImages(params?: {
   status?: string;
@@ -35,49 +35,48 @@ export function useImages(params?: {
 
   // Real-time updates
   useEffect(() => {
-    const unsubscribeClassified = socketService.on<ImageClassifiedEvent>('image:classified', (event) => {
+    const unsubscribeClassified = socketService.on('image:classified', (event: any) => {
       setData((prev) => {
         if (!prev) return prev;
-        const exists = prev.images.find((img) => img.id === event.id);
+        const exists = prev.images.find((img: Image) => img.id === event.id);
         if (exists) {
           return {
             ...prev,
-            images: prev.images.map((img) =>
+            images: prev.images.map((img: Image) =>
               img.id === event.id
-                ? { ...img, classification: event.classification, confidence: event.confidence, priority: event.priority, action: event.action, status: 'classified' as ImageStatus }
+                ? { ...img, classification: event.classification, confidence: event.confidence, priority: event.priority, action: event.action, status: 'classified' }
                 : img
             ),
           };
         }
         return {
           ...prev,
-          images: [{ ...event, file_path: '', status: 'classified' as ImageStatus, priority: event.priority, action: event.action, jpeg_quality: 85, progress_percent: 0, segments_confirmed: 0, created_at: new Date().toISOString() }, ...prev.images],
-          total: prev.total + 1,
+          images: [{ ...event, file_path: '', status: 'classified' as const, priority: event.priority, action: event.action, jpeg_quality: 85, progress_percent: 0, segments_confirmed: 0, created_at: new Date().toISOString() }, ...prev.images],
         };
       });
     });
 
-    const unsubscribeProgress = socketService.on<ImageProgressEvent>('image:progress', (event) => {
+    const unsubscribeProgress = socketService.on('image:progress', (event: any) => {
       setData((prev) => {
         if (!prev) return prev;
         return {
           ...prev,
-          images: prev.images.map((img) =>
+          images: prev.images.map((img: Image) =>
             img.id === event.id
-              ? { ...img, segments_confirmed: event.segments_confirmed, total_segments: event.segments_total, progress_percent: Math.round((event.segments_confirmed / event.segments_total) * 100), status: event.status }
+              ? { ...img, segments_confirmed: event.segments_confirmed, total_segments: event.segments_total, status: 'transmitting', progress: event.progress, rssi: event.rssi, snr: event.snr }
               : img
           ),
         };
       });
     });
 
-    const unsubscribeStatus = socketService.on('image:status', (event: { image_id: string; status: ImageStatus }) => {
+    const unsubscribeDiscard = socketService.on('image:discarded', (event: any) => {
       setData((prev) => {
         if (!prev) return prev;
         return {
           ...prev,
-          images: prev.images.map((img) =>
-            img.id === event.image_id ? { ...img, status: event.status } : img
+          images: prev.images.map((img: Image) =>
+            img.id === event.id ? { ...img, status: 'discarded' } : img
           ),
         };
       });
@@ -86,99 +85,23 @@ export function useImages(params?: {
     return () => {
       unsubscribeClassified();
       unsubscribeProgress();
-      unsubscribeStatus();
+      unsubscribeDiscard();
     };
   }, []);
 
   return { images: data?.images || [], total: data?.total || 0, loading, error, refetch: fetch };
 }
 
-export function useImage(id: string | null) {
-  const [data, setData] = useState<Image | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetch = useCallback(async () => {
-    if (!id) return;
-    try {
-      const res = await imagesApi.get(id);
-      setData(res.data);
-      setError(null);
-    } catch (e) {
-      setError('Failed to fetch image');
-    } finally {
-      setLoading(false);
-    }
-  }, [id]);
-
-  useEffect(() => {
-    fetch();
-  }, [fetch]);
-
-  return { image: data, loading, error, refetch: fetch };
-}
-
-export function useImageProgress(imageId: string | null) {
-  const [data, setData] = useState<ImageProgress | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetch = useCallback(async () => {
-    if (!imageId) return;
-    try {
-      const res = await imagesApi.progress(imageId);
-      setData(res.data);
-      setError(null);
-    } catch (e) {
-      setError('Failed to fetch progress');
-    } finally {
-      setLoading(false);
-    }
-  }, [imageId]);
-
-  useEffect(() => {
-    fetch();
-    const interval = setInterval(fetch, 2000);
-    return () => clearInterval(interval);
-  }, [fetch]);
-
-  // Real-time progress updates
-  useEffect(() => {
-    const unsubscribe = socketService.on<ImageProgressEvent>('image:progress', (event) => {
-      if (event.id === imageId) {
-        setData({
-          image_id: event.id,
-          status: event.status,
-          total_segments: event.segments_total,
-          segments_confirmed: event.segments_confirmed,
-          current_segment: event.segments_confirmed,
-          progress_percent: Math.round((event.segments_confirmed / event.segments_total) * 100),
-          rssi: null,
-          snr: null,
-          throughput_bps: null,
-          latency_ms_tx: null,
-        });
-      }
-    });
-
-    return () => unsubscribe();
-  }, [imageId]);
-
-  return { progress: data, loading, error, refetch: fetch };
-}
-
 export function useImagesStats() {
-  const [data, setData] = useState<ImagesStats | null>(null);
+  const [stats, setStats] = useState<ImagesStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const fetch = useCallback(async () => {
     try {
       const res = await imagesApi.stats();
-      setData(res.data);
-      setError(null);
+      setStats(res.data);
     } catch (e) {
-      setError('Failed to fetch stats');
+      console.error('Failed to fetch image stats');
     } finally {
       setLoading(false);
     }
@@ -186,69 +109,30 @@ export function useImagesStats() {
 
   useEffect(() => {
     fetch();
-    const interval = setInterval(fetch, 10000);
-    return () => clearInterval(interval);
+    const unsubscribe = socketService.on('image:classified', fetch);
+    return () => unsubscribe();
   }, [fetch]);
 
-  return { stats: data, loading, error, refetch: fetch };
+  return { stats, loading, refetch: fetch };
 }
 
-// Classification color helpers
-export function getClassificationColor(classification: string | null): string {
-  switch (classification) {
-    case 'CLEAR':
-      return 'bg-green-500 text-white';
-    case 'CLOUDY':
-      return 'bg-yellow-500 text-white';
-    case 'NOT_VISIBLE':
-      return 'bg-red-500 text-white';
-    default:
-      return 'bg-gray-500 text-white';
-  }
-}
+export function useImage(id: string) {
+  const [image, setImage] = useState<Image | null>(null);
+  const [loading, setLoading] = useState(true);
 
-export function getClassificationIcon(classification: string | null): string {
-  switch (classification) {
-    case 'CLEAR':
-      return '☀️';
-    case 'CLOUDY':
-      return '☁️';
-    case 'NOT_VISIBLE':
-      return '🌫️';
-    default:
-      return '❓';
-  }
-}
+  useEffect(() => {
+    if (!id) return;
+    let mounted = true;
+    imagesApi.get(id).then(res => {
+      if (mounted) {
+        setImage(res.data);
+        setLoading(false);
+      }
+    }).catch(() => {
+      if (mounted) setLoading(false);
+    });
+    return () => { mounted = false; };
+  }, [id]);
 
-export function getStatusColor(status: ImageStatus): string {
-  switch (status) {
-    case 'complete':
-      return 'bg-green-500 text-white';
-    case 'transmitting':
-      return 'bg-blue-500 text-white animate-pulse';
-    case 'queued':
-    case 'classified':
-      return 'bg-indigo-500 text-white';
-    case 'pending':
-      return 'bg-gray-500 text-white';
-    case 'discarded':
-      return 'bg-red-500 text-white';
-    case 'failed':
-      return 'bg-red-700 text-white';
-    default:
-      return 'bg-gray-500 text-white';
-  }
-}
-
-export function getActionColor(action: string | null): string {
-  switch (action) {
-    case 'keep':
-      return 'text-green-400';
-    case 'defer':
-      return 'text-yellow-400';
-    case 'discard':
-      return 'text-red-400';
-    default:
-      return 'text-gray-400';
-  }
+  return { image, loading };
 }

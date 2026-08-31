@@ -1,0 +1,170 @@
+/*
+ * test_radio_led.ino — Quick ESP32 Radio + LED Test
+ * =================================================
+ * Minimal test: receive LoRa packets, blink blue LED, forward via serial.
+ * No ARQ, no state machine — just raw packet reception.
+ *
+ * Hardware: ESP32 DevKit + SX1278
+ * Pins (match backup.ino):
+ *   NSS=5, RST=14, DIO0=26, MOSI=23, MISO=19, SCK=18
+ *   LED_STATUS=2 (onboard), LED_BLUE=13
+ */
+
+#include <Arduino.h>
+#include <SPI.h>
+#include <RadioLib.h>
+
+// Pins
+#define LORA_NSS    5
+#define LORA_RST    14
+#define LORA_DIO0   26
+#define LORA_MOSI   23
+#define LORA_MISO   19
+#define LORA_SCK    18
+#define LED_STATUS  2   // Onboard LED
+#define LED_BLUE    13  // Blue LED (GPIO 13)
+
+// Radio config (match Pi)
+const float LORA_FREQ     = 433.0;
+const int   LORA_SF       = 7;
+const float LORA_BW       = 125.0;
+const int   LORA_CR       = 5;
+const int   LORA_SYNC     = 0x12;
+const int   LORA_PREAMBLE = 8;
+const int   LORA_TX_POWER = 17;
+
+SX1278 radio = new Module(LORA_NSS, LORA_DIO0, LORA_RST);
+
+volatile bool rx_flag = false;
+uint32_t last_blink = 0;
+bool blue_state = false;
+uint32_t packet_count = 0;
+
+void IRAM_ATTR onRx() {
+  rx_flag = true;
+}
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+
+  pinMode(LED_STATUS, OUTPUT);
+  pinMode(LED_BLUE, OUTPUT);
+  digitalWrite(LED_STATUS, LOW);
+  digitalWrite(LED_BLUE, LOW);
+
+  SPI.begin(LORA_SCK, LORA_MISO, LORA_MOSI, LORA_NSS);
+
+  Serial.println("\n=== ESP32 Radio + LED Quick Test ===");
+  Serial.println("Pins: NSS=5 RST=14 DIO0=26 MOSI=23 MISO=19 SCK=18");
+  Serial.println("LED_STATUS=2 (onboard), LED_BLUE=13");
+  Serial.println("Config: 433MHz SF7 BW125 CR4/5 Sync=0x12");
+
+  int state = radio.begin();
+  if (state != RADIOLIB_ERR_NONE) {
+    Serial.printf("[FAIL] Radio init error: %d\n", state);
+    while (true) { digitalWrite(LED_STATUS, !digitalRead(LED_STATUS)); delay(200); }
+  }
+
+  radio.setFrequency(LORA_FREQ);
+  radio.setSpreadingFactor(LORA_SF);
+  radio.setBandwidth(LORA_BW);
+  radio.setCodingRate(LORA_CR);
+  radio.setSyncWord(LORA_SYNC);
+  radio.setPreambleLength(LORA_PREAMBLE);
+  radio.setCRC(true);
+  radio.setOutputPower(LORA_TX_POWER);
+  radio.setDio0Action(onRx, RISING);
+
+  Serial.println("[RADIO] Ready - listening for packets...");
+  Serial.println("========================================\n");
+
+  radio.startReceive();
+  digitalWrite(LED_STATUS, HIGH);  // Status LED solid = listening
+}
+
+void loop() {
+  // Blink blue LED periodically to show it's alive
+  if (millis() - last_blink > 1000) {
+    last_blink = millis();
+    blue_state = !blue_state;
+    digitalWrite(LED_BLUE, blue_state);
+  }
+
+  if (rx_flag) {
+    rx_flag = false;
+
+    uint8_t buf[256];
+    int16_t len = radio.getPacketLength();
+    if (len > 0 && len <= 256) {
+      int16_t state = radio.readData(buf, len);
+      if (state == RADIOLIB_ERR_NONE) {
+        packet_count++;
+        int16_t rssi = radio.getRSSI();
+        float snr = radio.getSNR();
+
+        // Blink blue LED on packet received
+        digitalWrite(LED_BLUE, HIGH);
+        delay(50);
+        digitalWrite(LED_BLUE, LOW);
+
+        // Print packet info
+        Serial.printf("[PKT #%lu] len=%d RSSI=%ddBm SNR=%.1fdB\n", packet_count, len, rssi, snr);
+        Serial.print("  Data: ");
+        for (int i = 0; i < min(len, 32); i++) {
+          Serial.printf("%02X ", buf[i]);
+        }
+        if (len > 32) Serial.print("...");
+        Serial.println();
+
+        // Forward raw packet via serial (0xAA framing for laptop)
+        serial_send_packet(buf, len);
+
+        // Parse header if it matches our protocol
+        if (len >= 36) {
+          uint8_t ver = buf[0];
+          uint8_t type = buf[1];
+          char mission[7], image[7];
+          memcpy(mission, &buf[2], 6); mission[6] = 0;
+          memcpy(image, &buf[8], 6); image[6] = 0;
+          uint16_t chunk = (buf[14] << 8) | buf[15];
+          uint16_t total = (buf[16] << 8) | buf[17];
+          const char* type_str = "UNK";
+          switch(type) {
+            case 0: type_str = "DATA"; break;
+            case 1: type_str = "ACK"; break;
+            case 2: type_str = "NACK"; break;
+            case 3: type_str = "META"; break;
+            case 4: type_str = "STATUS"; break;
+            case 5: type_str = "DONE"; break;
+          }
+          Serial.printf("  Header: ver=%u type=%s(%u) mission=%s image=%s chunk=%u/%u\n",
+                        ver, type_str, type, mission, image, chunk, total);
+        }
+      }
+    }
+    radio.startReceive();
+  }
+}
+
+// Simple 0xAA framing for serial forwarding
+void serial_send_packet(const uint8_t* payload, size_t len) {
+  if (len > 255) len = 255;
+  uint8_t frame[4 + 255 + 2];
+  frame[0] = 0xAA;
+  frame[1] = (len >> 8) & 0xFF;
+  frame[2] = len & 0xFF;
+  memcpy(&frame[3], payload, len);
+  // CRC16-CCITT over len+payload
+  uint16_t crc = 0xFFFF;
+  for (size_t i = 1; i < 3 + len; i++) {
+    crc ^= (uint16_t)frame[i] << 8;
+    for (int j = 0; j < 8; j++) {
+      if (crc & 0x8000) crc = (crc << 1) ^ 0x1021;
+      else crc <<= 1;
+    }
+  }
+  frame[3 + len] = (crc >> 8) & 0xFF;
+  frame[3 + len + 1] = crc & 0xFF;
+  Serial.write(frame, 5 + len);
+}

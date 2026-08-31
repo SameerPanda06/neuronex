@@ -1,11 +1,11 @@
-// Telemetry Hooks
+// Telemetry Hooks - TypeScript
 import { useState, useEffect, useCallback } from 'react';
 import { telemetryApi } from '../services/api';
 import { socketService } from '../services/socket';
-import type { Telemetry, TelemetryHistory, SignalQuality, TelemetryUpdateEvent } from '../types';
+import type { Telemetry, TelemetryResponse } from '../types';
 
 export function useLatestTelemetry() {
-  const [data, setData] = useState<{ latest_overall: Telemetry | null; latest_per_image: Telemetry[] } | null>(null);
+  const [data, setData] = useState<TelemetryResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,17 +29,17 @@ export function useLatestTelemetry() {
 
   // Real-time updates via WebSocket
   useEffect(() => {
-    const unsubscribe = socketService.on<TelemetryUpdateEvent>('telemetry:update', (update) => {
+    const unsubscribe = socketService.on('telemetry:update', (update: any) => {
       setData((prev) => {
         if (!prev) return prev;
         return {
           ...prev,
           latest_overall: {
-            ...prev.latest_overall!,
+            ...prev.latest_overall,
             ...update,
             timestamp: update.timestamp,
-          } as Telemetry,
-          latest_per_image: prev.latest_per_image.map((t) =>
+          },
+          latest_per_image: prev.latest_per_image.map((t: Telemetry) =>
             t.image_id === update.image_id ? { ...t, ...update } : t
           ),
         };
@@ -56,15 +56,15 @@ export function useLatestTelemetry() {
   return { data, loading, error, refetch: fetch };
 }
 
-export function useTelemetryHistory(imageId?: string, hours = 24) {
-  const [data, setData] = useState<TelemetryHistory | null>(null);
+export function useTelemetryHistory(imageId: string, hours = 24) {
+  const [data, setData] = useState<Telemetry[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetch = useCallback(async () => {
     try {
       const res = await telemetryApi.history({ image_id: imageId, hours });
-      setData(res.data);
+      setData(res.data?.data || []);
       setError(null);
     } catch (e) {
       setError('Failed to fetch telemetry history');
@@ -74,64 +74,8 @@ export function useTelemetryHistory(imageId?: string, hours = 24) {
   }, [imageId, hours]);
 
   useEffect(() => {
-    fetch();
-    const interval = setInterval(fetch, 30000); // Poll every 30s
-    return () => clearInterval(interval);
-  }, [fetch]);
+    if (imageId) fetch();
+  }, [fetch, imageId]);
 
   return { data, loading, error, refetch: fetch };
-}
-
-export function useSignalQuality(imageId?: string, hours = 24) {
-  const [data, setData] = useState<SignalQuality | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetch = useCallback(async () => {
-    try {
-      const res = await telemetryApi.signal({ image_id: imageId, hours });
-      setData(res.data);
-      setError(null);
-    } catch (e) {
-      setError('Failed to fetch signal quality');
-    } finally {
-      setLoading(false);
-    }
-  }, [imageId, hours]);
-
-  useEffect(() => {
-    fetch();
-    const interval = setInterval(fetch, 10000); // Poll every 10s
-    return () => clearInterval(interval);
-  }, [fetch]);
-
-  return { data, loading, error, refetch: fetch };
-}
-
-// Signal quality helpers
-export function getSignalQualityClass(rssi: number | null): string {
-  if (rssi === null) return 'text-gray-400';
-  if (rssi >= -70) return 'text-signal-excellent';
-  if (rssi >= -85) return 'text-signal-good';
-  if (rssi >= -100) return 'text-signal-fair';
-  if (rssi >= -115) return 'text-signal-poor';
-  return 'text-signal-critical';
-}
-
-export function getSignalQualityLabel(rssi: number | null): string {
-  if (rssi === null) return 'No Signal';
-  if (rssi >= -70) return 'Excellent';
-  if (rssi >= -85) return 'Good';
-  if (rssi >= -100) return 'Fair';
-  if (rssi >= -115) return 'Poor';
-  return 'Critical';
-}
-
-export function getSnrQualityClass(snr: number | null): string {
-  if (snr === null) return 'text-gray-400';
-  if (snr >= 10) return 'text-signal-excellent';
-  if (snr >= 5) return 'text-signal-good';
-  if (snr >= 0) return 'text-signal-fair';
-  if (snr >= -5) return 'text-signal-poor';
-  return 'text-signal-critical';
 }

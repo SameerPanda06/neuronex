@@ -1,0 +1,12 @@
+{
+  "CLEAR": {
+    "action": "keep",
+    "priority": 1,
+    "jpeg_quality": 85
+  },
+  "CLOUDY": {
+    "action": "discard",
+    "priority": 2,
+    "jpeg_quality": 60
+  }
+}

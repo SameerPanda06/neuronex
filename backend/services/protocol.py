@@ -21,6 +21,7 @@ PKT_META = config.PKT_META
 PKT_STATUS = config.PKT_STATUS
 PKT_DONE = config.PKT_DONE
 PKT_TELEMETRY = config.PKT_TELEMETRY
+PKT_CMD = config.PKT_CMD
 
 FRAME_START = config.FRAME_START
 MAX_PAYLOAD = config.MAX_PAYLOAD
@@ -140,6 +141,32 @@ def build_done_packet(mission_id: str, image_id: str, total_segments: int) -> by
     header = build_header(PKT_DONE, mission_id, image_id,
                           0xFFFF, 0xFFFF, len(payload), crc_val)
     return header + payload
+
+
+# Command sub-commands (must match Pi TX / ESP32)
+CMD_PRIORITY = 0x01   # value: 1=CLEAR, 2=CLOUDY
+CMD_RESET = 0x02      # clear ESP32 persisted state
+CMD_STATUS_REQ = 0x03 # request status echo
+
+
+def build_cmd_packet(mission_id: str, image_id: str, cmd: int, value: int = 0) -> bytes:
+    """Build PKT_CMD packet (ground -> satellite).
+    Payload: cmd(u8), value(u8). Reuses a sentinel image id when broadcast."""
+    payload = struct.pack("!BB", cmd, value)
+
+    header = build_header(PKT_CMD, mission_id, image_id,
+                          0xFFFF, 0xFFFF, len(payload))
+    crc_val = calculate_crc(header + payload)
+    header = build_header(PKT_CMD, mission_id, image_id,
+                          0xFFFF, 0xFFFF, len(payload), crc_val)
+    return header + payload
+
+
+def parse_cmd_payload(payload: bytes) -> dict:
+    """Parse PKT_CMD payload: cmd(u8), value(u8)."""
+    if len(payload) < 2:
+        return {}
+    return {"cmd": payload[0], "value": payload[1] if len(payload) > 1 else 0}
 
 
 # Parsers

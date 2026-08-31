@@ -1,44 +1,33 @@
-// Socket.IO Client Service
+// Socket.IO Client Service - TypeScript
 import { io, Socket } from 'socket.io-client';
-import type {
-  TelemetryUpdateEvent,
-  ImageClassifiedEvent,
-  ImageProgressEvent,
-  RetransmitRequestedEvent,
-  RevolutionStartEvent,
-  RevolutionEndEvent,
-  RetransmitAckEvent,
-  QueueReorderEvent,
-  ImageDiscardEvent,
-} from '../types';
 
-type EventCallback<T> = (data: T) => void;
+type EventCallback<T = any> = (data: T) => void;
 
 class SocketService {
   private socket: Socket | null = null;
-  private connected = false;
+  connected = false;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 10;
-
-  // Event listeners
-  private listeners: Map<string, Set<EventCallback<any>>> = new Map();
+  private listeners: Map<string, Set<EventCallback>> = new Map();
 
   connect(url?: string): Promise<void> {
     return new Promise((resolve, reject) => {
       if (this.socket?.connected) {
+        this.connected = true;
         resolve();
         return;
       }
 
-      const wsUrl = url || import.meta.env.VITE_WS_URL || 'ws://localhost:5000';
+      const wsUrl = url || (typeof import.meta !== 'undefined' && import.meta.env?.VITE_WS_URL) || 'http://localhost:5000';
 
       this.socket = io(wsUrl, {
-        transports: ['websocket', 'polling'],
+        // HTTP long-polling first (CORS-safe), then upgrade to websocket
+        transports: ['polling', 'websocket'],
         reconnection: true,
         reconnectionAttempts: this.maxReconnectAttempts,
         reconnectionDelay: 1000,
         reconnectionDelayMax: 5000,
-        timeout: 10000,
+        timeout: 15000,
         autoConnect: true,
       });
 
@@ -60,16 +49,32 @@ class SocketService {
         this.reconnectAttempts++;
         console.error('[Socket] Connection error:', error.message);
         if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-          reject(new Error('Max reconnection attempts reached'));
+          reject(error);
         }
       });
 
-      // Register all event handlers
-      this.registerEventHandlers();
+      // Server events - re-emit to local listeners
+      const events = [
+        'telemetry:update',
+        'image:classified',
+        'image:progress',
+        'image:discarded',
+        'revolution:start',
+        'revolution:end',
+        'retransmit:requested',
+        'retransmit:ack:confirmed',
+        'queue:update',
+        'queue:reordered',
+        'schedule:update',
+      ];
+
+      events.forEach((event) => {
+        this.socket?.on(event, (data) => this.emit(event, data));
+      });
     });
   }
 
-  disconnect(): void {
+  disconnect() {
     if (this.socket) {
       this.socket.disconnect();
       this.socket = null;
@@ -77,12 +82,7 @@ class SocketService {
     }
   }
 
-  isConnected(): boolean {
-    return this.connected && this.socket?.connected === true;
-  }
-
-  // Subscribe to events
-  on<T>(event: string, callback: EventCallback<T>): () => void {
+  on(event: string, callback: EventCallback): () => void {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, new Set());
     }
@@ -90,104 +90,44 @@ class SocketService {
 
     // Return unsubscribe function
     return () => {
-      this.listeners.get(event)?.delete(callback);
+      const callbacks = this.listeners.get(event);
+      if (callbacks) {
+        callbacks.delete(callback);
+      }
     };
   }
 
-  off<T>(event: string, callback: EventCallback<T>): void {
-    this.listeners.get(event)?.delete(callback);
-  }
-
-  // Emit to server
-  emit(event: string, data: any): void {
-    this.socket?.emit(event, data);
-  }
-
-  // Server -> Client events
-  private registerEventHandlers(): void {
-    if (!this.socket) return;
-
-    const events = [
-      'telemetry:update',
-      'image:classified',
-      'image:progress',
-      'retransmit:requested',
-      'revolution:start',
-      'revolution:end',
-      'queue:update',
-      'image:status',
-      'connected',
-      'disconnected',
-      'pong',
-      'telemetry:subscribed',
-      'telemetry:unsubscribed',
-      'queue:subscribed',
-      'queue:unsubscribed',
-      'retransmit:ack:confirmed',
-      'queue:reordered',
-      'image:discarded',
-      'revolution:triggered',
-    ];
-
-    events.forEach((event) => {
-      this.socket?.on(event, (data: any) => {
-        this.emit(event, data);
+  emit(event: string, data?: any) {
+    const callbacks = this.listeners.get(event);
+    if (callbacks) {
+      callbacks.forEach((callback) => {
+        try {
+          callback(data);
+        } catch (error) {
+          console.error(`[Socket] Callback error for ${event}:`, error);
+        }
       });
-    });
+    }
   }
 
-  private emit<T>(event: string, data: T): void {
-    this.listeners.get(event)?.forEach((callback) => {
-      try {
-        callback(data);
-      } catch (error) {
-        console.error(`[Socket] Callback error for ${event}:`, error);
-      }
-    });
+  getConnectionState(): boolean {
+    return this.connected;
   }
 
-  // Convenience methods for Client -> Server events
-  joinTelemetry(): void {
-    this.emit('join:telemetry', {});
-  }
-
-  leaveTelemetry(): void {
-    this.emit('leave:telemetry', {});
-  }
-
-  joinQueue(): void {
-    this.emit('join:queue', {});
-  }
-
-  leaveQueue(): void {
-    this.emit('leave:queue', {});
-  }
-
-  acknowledgeRetransmission(data: RetransmitAckEvent): void {
-    this.emit('retransmit:ack', data);
-  }
-
-  reorderQueue(data: QueueReorderEvent[]): void {
-    this.emit('queue:reorder', data);
-  }
-
-  discardImage(data: ImageDiscardEvent): void {
-    this.emit('image:discard', data);
-  }
-
-  triggerRevolution(data: any): void {
-    this.emit('revolution:trigger', data);
-  }
-
-  ping(): void {
-    this.emit('ping', { timestamp: Date.now() });
-  }
+  // Client -> Server emits
+  joinTelemetry() { this.socket?.emit('telemetry:join'); }
+  leaveTelemetry() { this.socket?.emit('telemetry:leave'); }
+  joinQueue() { this.socket?.emit('queue:join'); }
+  leaveQueue() { this.socket?.emit('queue:leave'); }
+  acknowledgeRetransmission(id: number) { this.socket?.emit('retransmit:ack', { id }); }
+  reorderQueue(items: any[]) { this.socket?.emit('queue:reorder', { items }); }
+  discardImage(id: string) { this.socket?.emit('image:discard', { id }); }
+  triggerRevolution() { this.socket?.emit('revolution:trigger', {}); }
+  ping() { this.socket?.emit('ping'); }
 }
 
-// Singleton instance
 export const socketService = new SocketService();
 
-// React hook for using socket
 export function useSocket() {
   return socketService;
 }

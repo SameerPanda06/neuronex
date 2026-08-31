@@ -1,15 +1,11 @@
-// Retransmissions Hooks
+// Retransmissions Hooks - TypeScript
 import { useState, useEffect, useCallback } from 'react';
 import { retransmitApi } from '../services/api';
 import { socketService } from '../services/socket';
-import type { Retransmission, RetransmissionsResponse, RetransmissionStats } from '../types';
+import type { Retransmission } from '../types';
 
-export function useRetransmissions(params?: {
-  status?: string;
-  image_id?: string;
-  limit?: number;
-}) {
-  const [data, setData] = useState<RetransmissionsResponse | null>(null);
+export function useRetransmissions(params?: { status?: string; image_id?: string; limit?: number }) {
+  const [data, setData] = useState<{ retransmissions: Retransmission[] } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,7 +29,7 @@ export function useRetransmissions(params?: {
 
   // Real-time updates
   useEffect(() => {
-    const unsubRequested = socketService.on('retransmit:requested', (event: { image_id: string; mission_id: string; missing_segments: number[] }) => {
+    const unsubRequested = socketService.on('retransmit:requested', (event: any) => {
       setData((prev) => {
         if (!prev) return prev;
         const newRetrans: Retransmission = {
@@ -41,58 +37,55 @@ export function useRetransmissions(params?: {
           image_id: event.image_id,
           mission_id: event.mission_id,
           missing_segments: event.missing_segments,
-          requested_at: new Date().toISOString(),
-          acknowledged_at: null,
-          completed_at: null,
           status: 'pending',
+          requested_at: new Date().toISOString(),
+          completed_at: null,
         };
-        return { ...prev, retransmissions: [newRetrans, ...prev.retransmissions], count: prev.count + 1 };
+        return { ...prev, retransmissions: [newRetrans, ...prev.retransmissions] };
       });
     });
 
-    const unsubAck = socketService.on('retransmit:ack:confirmed', (event: { received: { retransmit_id?: number; image_id?: string } }) => {
+    const unsubAck = socketService.on('retransmit:ack:confirmed', (event: any) => {
       setData((prev) => {
         if (!prev) return prev;
         return {
           ...prev,
-          retransmissions: prev.retransmissions.map((r) =>
-            (event.received.retransmit_id && r.id === event.received.retransmit_id) ||
-            (event.received.image_id && r.image_id === event.received.image_id && r.status === 'pending')
-              ? { ...r, status: 'acknowledged', acknowledged_at: new Date().toISOString() }
+          retransmissions: prev.retransmissions.map((r: Retransmission) =>
+            (event.received?.retransmit_id && r.id === event.received.retransmit_id) ||
+            (event.received?.image_id && r.image_id === event.received.image_id)
+              ? { ...r, status: 'acknowledged' }
               : r
           ),
         };
       });
     });
 
-    return () => { unsubRequested(); unsubAck(); };
+    return () => {
+      unsubRequested();
+      unsubAck();
+    };
   }, []);
 
-  return { retransmissions: data?.retransmissions || [], total: data?.count || 0, loading, error, refetch: fetch };
+  return { data, loading, error, refetch: fetch };
 }
 
 export function useRetransmissionStats() {
-  const [data, setData] = useState<RetransmissionStats | null>(null);
+  const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetch = useCallback(async () => {
-    try {
-      const res = await retransmitApi.stats();
-      setData(res.data);
-      setError(null);
-    } catch (e) {
-      setError('Failed to fetch retransmission stats');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
   useEffect(() => {
+    const fetch = async () => {
+      try {
+        const res = await retransmitApi.stats();
+        setData(res.data);
+      } catch (e) {
+        console.error('Failed to fetch retransmission stats:', e);
+      } finally {
+        setLoading(false);
+      }
+    };
     fetch();
-    const interval = setInterval(fetch, 10000);
-    return () => clearInterval(interval);
-  }, [fetch]);
+  }, []);
 
-  return { stats: data, loading, error, refetch: fetch };
+  return { data, loading };
 }
