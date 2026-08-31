@@ -42,9 +42,24 @@ def get_current_revolution():
 def get_revolution_status():
     """Get current revolution status for dashboard."""
     active = Revolution.query.filter(Revolution.status == "active").first()
+    next_rev = Revolution.query.filter(Revolution.status == "scheduled").order_by(Revolution.window_start.asc()).first()
     total = Revolution.query.count()
+    now = datetime.utcnow()
+
+    time_remaining = None
+    if active and active.window_end:
+        time_remaining = max(0, int((active.window_end - now).total_seconds()))
+
+    time_until_next = None
+    if next_rev and next_rev.window_start:
+        time_until_next = max(0, int((next_rev.window_start - now).total_seconds()))
 
     return jsonify({
+        "active": active is not None,
+        "revolution": active.to_dict() if active else None,
+        "time_remaining": time_remaining,
+        "next_revolution": next_rev.to_dict() if next_rev else None,
+        "time_until_next": time_until_next,
         "current_revolution": active.revolution_num if active else 0,
         "total_revolutions": total,
         "active_mission": active.mission_id if active else None,
@@ -107,9 +122,10 @@ def schedule_revolution():
     # Calculate total segments
     total_segments = 0
     for img_plan in images_planned:
-        img = Image.query.get(img_plan["id"])
+        img = db.session.get(Image, img_plan["id"])
         if img and img.total_segments:
             total_segments += img.total_segments
+
 
     revolution = Revolution(
         revolution_num=revolution_num,

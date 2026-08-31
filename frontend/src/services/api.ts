@@ -113,9 +113,26 @@ export const revolutionsApi = {
   status: () => api.get<RevolutionStatusResponse>('/api/revolutions/status'),
 };
 
+// Schedule API
+export const scheduleApi = {
+  state: () => api.get('/api/schedule/state'),
+  nextRevolution: () => api.get('/api/schedule/next-revolution'),
+  window: () => api.get('/api/schedule/window'),
+  config: () => api.get('/api/schedule/config'),
+};
+
+// Command API
+export const commandApi = {
+  setPriority: (priority: number) => api.post('/api/command/priority', { priority }),
+  reset: () => api.post('/api/command/reset', {}),
+  requestStatus: () => api.post('/api/command/status', {}),
+  getQueue: () => api.get('/api/command/queue'),
+};
+
 // Health
 export const healthApi = {
   check: () => api.get('/api/health'),
 };
 
 export default api;
+

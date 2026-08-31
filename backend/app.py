@@ -30,8 +30,9 @@ def create_app():
 
     # Initialize extensions
     db.init_app(app)
-    CORS(app, origins="*")
+    CORS(app, resources={r"/api/*": {"origins": ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000", "http://127.0.0.1:3000", "*"]}}, supports_credentials=True)
     socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
+
 
     # Create tables
     with app.app_context():
@@ -47,7 +48,7 @@ def create_app():
     from api.command import bp as command_bp
     from api.schedule import bp as schedule_bp
 
-    app.register_blueprint(images_bp, url_prefix="/api")
+    app.register_blueprint(images_bp, url_prefix="/api/images")
     app.register_blueprint(telemetry_bp, url_prefix="/api")
     app.register_blueprint(queue_bp, url_prefix="/api")
     app.register_blueprint(retransmit_bp, url_prefix="/api")
@@ -64,65 +65,14 @@ def create_app():
             "version": "1.0.0"
         })
 
-    # Images stats endpoint (needed for dashboard)
-    @app.route("/api/images/stats")
-    def images_stats():
-        from models import Image, ImageStatus, Classification
-        total = Image.query.count()
-        by_status = {}
-        for s in ImageStatus:
-            by_status[s.value] = Image.query.filter(Image.status == s.value).count()
-        by_classification = {}
-        for c in Classification:
-            by_classification[c.value] = Image.query.filter(Image.classification == c.value).count()
-        avg_progress = db.session.query(db.func.avg(Image.progress_percent)).scalar() or 0
-        return jsonify({
-            "total": total,
-            "by_status": by_status,
-            "by_classification": by_classification,
-            "avg_progress": round(float(avg_progress), 1)
-        })
+    # Register SocketIO events & rooms
+    from websocket.events import register_socketio_events
+    register_socketio_events(socketio)
 
-    # Queue next endpoint (needed for dashboard)
-    @app.route("/api/queue/next")
-    def queue_next():
-        from models import Image, ImageStatus
-        next_img = Image.query.filter(
-            Image.status.in_([ImageStatus.QUEUED.value, ImageStatus.CLASSIFIED.value])
-        ).order_by(Image.priority.asc()).first()
-        return jsonify({"image": next_img.to_dict() if next_img else None})
-
-    
-    # SocketIO events
-    @socketio.on("connect")
-    def handle_connect():
-        logger.info(f"Client connected: {request.sid}")
-        emit("connected", {"sid": request.sid, "timestamp": datetime.utcnow().isoformat()})
-
-    @socketio.on("disconnect")
-    def handle_disconnect():
-        logger.info(f"Client disconnected: {request.sid}")
-
-    @socketio.on("retransmit:ack")
-    def handle_retransmit_ack(data):
-        """Client acknowledges/trigger retransmission."""
-        logger.info(f"Retransmit ack from client: {data}")
-        # TODO: Forward to Pi TX via serial
-        emit("retransmit:ack:confirmed", {"received": data}, broadcast=True)
-
-    @socketio.on("queue:reorder")
-    def handle_queue_reorder(data):
-        """Client reorders transmission queue."""
-        logger.info(f"Queue reorder: {data}")
-        # TODO: Update queue in database
-        emit("queue:reordered", {"queue": data}, broadcast=True)
-
-    @socketio.on("image:discard")
-    def handle_image_discard(data):
-        """Client marks image as discarded."""
-        logger.info(f"Image discard: {data}")
-        # TODO: Update image status
-        emit("image:discarded", {"received": data}, broadcast=True)
+    # Initialize Serial Receiver (handles hardware failure gracefully)
+    from services.receiver import init_receiver
+    receiver = init_receiver(config.SERIAL_PORT, config.SERIAL_BAUDRATE, socketio, app)
+    receiver.start()
 
     # Background task: emit telemetry updates
     def emit_telemetry_loop():
@@ -134,7 +84,7 @@ def create_app():
                     # Get latest telemetry
                     latest = Telemetry.query.order_by(Telemetry.timestamp.desc()).first()
                     if latest:
-                        image = db.session.get(Image,latest.image_id)
+                        image = db.session.get(Image, latest.image_id)
                         socketio.emit("telemetry:update", {
                             "image_id": latest.image_id,
                             "mission_id": latest.mission_id,
@@ -146,7 +96,7 @@ def create_app():
                             "latency_ms": latest.latency_ms,
                             "timestamp": latest.timestamp.isoformat(),
                             "progress": image.progress_percent if image else 0,
-                        })
+                        }, room="telemetry")
             except Exception as e:
                 logger.error(f"Telemetry emit error: {e}")
             time.sleep(0.5)  # 2 Hz updates
@@ -169,10 +119,10 @@ def create_app():
                 if has_pending_commands():
                     cmd_packet = pop_next_command()
                     if cmd_packet:
-                        receiver = get_receiver()
-                        if receiver and receiver.serial_conn and receiver.serial_conn.is_open:
+                        recv = get_receiver()
+                        if recv and recv.serial_conn and recv.serial_conn.is_open:
                             # Send raw command packet (will be framed by ESP32 for LoRa TX)
-                            receiver.serial_conn.write(cmd_packet)
+                            recv.serial_conn.write(cmd_packet)
                             logger.info(f"Sent CMD to ESP32: {cmd_packet.hex()}")
             except Exception as e:
                 logger.error(f"Command send error: {e}")
@@ -183,10 +133,11 @@ def create_app():
     return app, socketio
 
 
+
 app, socketio = create_app()
 
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "5000"))
     logger.info(f"Starting Neuronex Backend on port {port}")
-    socketio.run(app, host="0.0.0.0", port=port, debug=config.FLASK_DEBUG)
+    socketio.run(app, host="0.0.0.0", port=port, debug=config.FLASK_DEBUG, allow_unsafe_werkzeug=True)

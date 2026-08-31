@@ -53,7 +53,8 @@ class SerialReceiver:
             )
             logger.info(f"Opened serial port {self.port} @ {self.baudrate}")
         except Exception as e:
-            logger.error(f"Failed to open serial port {self.port}: {e}")
+            logger.warning(f"Serial port {self.port} unavailable: {e}. Running in software fallback mode.")
+            self.serial_conn = None
             return
 
         self.running = True
